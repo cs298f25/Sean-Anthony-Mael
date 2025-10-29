@@ -1,0 +1,69 @@
+.app { background: linear-gradient(120deg, #4e54c8, #8f94fb); }
+:root {
+  --card-bg: rgba(255, 255, 255, 0.15);
+  --card-border: rgba(255, 255, 255, 0.25);
+  --text: #ffffff;
+}
+
+* { box-sizing: border-box }
+html, body, #root { height: 100% }
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji"; }
+
+.app { position: relative; min-height: 100%; overflow: hidden; color: var(--text); }
+.overlay { position: relative; z-index: 10; padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem }
+
+h1 { margin: 0.5rem 0 1rem; font-weight: 700 }
+.error { color: #ffd3d3 }
+
+.card {
+  width: min(540px, 92vw);
+  backdrop-filter: blur(10px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.row { display: flex; justify-content: space-between; padding: 0.5rem 0; align-items: center; }
+.row.small { font-size: 0.9rem; opacity: 0.9 }
+.label { opacity: 0.9 }
+.value { font-weight: 700 }
+
+/* Scene base */
+.scene { position: absolute; inset: 0; overflow: hidden; }
+
+/* Default gradient */
+.app.default .scene { background: linear-gradient(120deg, #4e54c8, #8f94fb); }
+
+/* Sunny */
+.app.sunny .scene { background: linear-gradient(120deg, #56ccf2, #f2994a); }
+.sun { position: absolute; top: 10%; left: 12%; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff799, #ffd36e 60%, #f6b445); filter: blur(0.2px); box-shadow: 0 0 80px 30px rgba(255, 217, 0, 0.25); animation: pulse 4s ease-in-out infinite; opacity: 0; }
+.app.sunny .sun, .app.default .sun { opacity: 1 }
+@keyframes pulse { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.05) } }
+
+/* Clouds */
+.cloud { position: absolute; top: 20%; width: 220px; height: 70px; background: rgba(255,255,255,0.8); border-radius: 40px; filter: blur(0.3px); opacity: 0; }
+.cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.cloud::before { width: 110px; height: 110px; left: 20px; top: -55px; }
+.cloud::after  { width: 150px; height: 150px; left: 90px; top: -85px; }
+.cloud-1 { left: -240px; animation: drift 40s linear infinite; animation-delay: 1s }
+.cloud-2 { top: 35%; left: -320px; transform: scale(0.8); animation: drift 55s linear infinite; }
+@keyframes drift { to { transform: translateX(140vw) } }
+.app.clouds .cloud, .app.default .cloud, .app.rain .cloud, .app.snow .cloud, .app.storm .cloud { opacity: 1 }
+
+/* Rain */
+.rain-layer { position: absolute; inset: 0; pointer-events: none; opacity: 0 }
+.raindrop { position: absolute; top: -10%; width: 2px; height: 16px; background: rgba(255,255,255,0.7); animation: fall 1.2s linear infinite; }
+@keyframes fall { to { transform: translateY(120vh) } }
+.app.rain .rain-layer, .app.storm .rain-layer { opacity: 1 }
+
+/* Snow */
+.snow-layer { position: absolute; inset: 0; pointer-events: none; opacity: 0 }
+.snowflake { position: absolute; top: -10%; width: 6px; height: 6px; background: rgba(255,255,255,0.95); border-radius: 50%; animation: snow 6s linear infinite; filter: blur(0.3px) }
+@keyframes snow { to { transform: translateY(110vh) translateX(20px) rotate(360deg) } }
+.app.snow .snow-layer { opacity: 1 }
+
+/* Storm */
+.app.storm .scene { background: linear-gradient(160deg, #232526, #414345) }
+
+
