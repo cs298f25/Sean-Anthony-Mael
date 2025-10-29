@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TODO List</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+<body>
+    <div class="todo-container">
+        <h1>Sean's TODO List</h1>
+        <ul id="todo-list">
+            <!-- List items will be loaded dynamically -->
+        </ul>
+        <form id="add-task-form">
+            <input type="text" id="new-task-description" placeholder="Description">
+            <input type="text" id="new-task-category" placeholder="Category">
+            <button type="submit">Add</button>
+        </form>
+    </div>
+
+    <script>
+        function addTodoItem(description, category) {
+            const todoList = document.getElementById('todo-list');
+            const li = document.createElement('li');
+            li.appendChild(document.createTextNode(`[${category}]: ${description}`));
+            todoList.appendChild(li);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/todos')
+                .then(response => response.json())
+                .then(data => {
+                    const todoList = document.getElementById('todo-list');
+                    data['data'].forEach(item => {
+                        addTodoItem(item.description, item.category)
+                    });
+                });
+
+            document.getElementById('add-task-form').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const description = document.getElementById('new-task-description').value;
+                const category = document.getElementById('new-task-category').value;
+
+                addTodoItem(description, category);
+
+                document.getElementById('new-task-description').value = '';
+                document.getElementById('new-task-category').value = '';
+                fetch('/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `description=${description}&category=${category}`
+                });
+            });
+        });
+    </script>
+</body>
+</html>
