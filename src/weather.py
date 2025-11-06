@@ -31,16 +31,30 @@ def build_weather_url():
         raise RuntimeError('Missing WEATHER_API in environment')
     return f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={lat},{lon}"
 
+def build_astronomy_url():
+    lat, lon = get_longitude_latitude()
+    api_key = os.getenv('WEATHER_API')
+    if not api_key:
+        raise RuntimeError('Missing WEATHER_API in environment')
+    return f"http://api.weatherapi.com/v1/astronomy.json?key={api_key}&q={lat},{lon}"
+
 
 def fetch_weather() -> dict:
     f"""
     Fetch current weather for inputted city and state from WeatherAPI.
-    Returns a small dict with the specific fields needed by the frontend.
+    Returns a small dict with the specific fields needed for the frontend.
     """
     url = build_weather_url()
     response = requests.get(url, timeout=10)
     response.raise_for_status()
     data = response.json()
+    
+    # Fetch astronomy data for sunrise/sunset
+    astronomy_url = build_astronomy_url()
+    astronomy_response = requests.get(astronomy_url, timeout=10)
+    astronomy_response.raise_for_status()
+    astronomy_data = astronomy_response.json()
+    
     return {
         'city': data['location']['name'],
         'region': data['location']['region'],
@@ -48,7 +62,9 @@ def fetch_weather() -> dict:
         'temperature_f': data['current']['temp_f'],
         'feels_like_f': data['current']['feelslike_f'],
         'condition_text': data['current']['condition']['text'],
-        'last_updated': data['current']['last_updated']
+        'last_updated': data['current']['last_updated'],
+        'sunrise': astronomy_data['astronomy']['astro']['sunrise'],
+        'sunset': astronomy_data['astronomy']['astro']['sunset']
     }
 
 
