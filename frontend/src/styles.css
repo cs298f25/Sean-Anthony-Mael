@@ -66,4 +66,76 @@ h1 { margin: 0.5rem 0 1rem; font-weight: 700 }
 /* Storm */
 .app.storm .scene { background: linear-gradient(160deg, #232526, #414345) }
 
+/* Nighttime */
+.app.night .scene { 
+  background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  animation: nightShift 20s ease-in-out infinite;
+}
+.app.night .sun { opacity: 0; }
+.app.night .cloud { opacity: 0.3; }
+@keyframes nightShift {
+  0%, 100% { background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+  50% { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+}
+
+/* Sunset */
+.app.sunset .scene { 
+  background: linear-gradient(180deg, #ff6b6b 0%, #ffa500 25%, #ff8c42 50%, #ff6b9d 75%, #c44569 100%);
+  animation: sunsetGradient 15s ease-in-out infinite;
+}
+.app.sunset .sun { 
+  opacity: 1;
+  top: 25%;
+  background: radial-gradient(circle at 35% 35%, #ffd89b, #ff6b6b 60%, #c44569);
+  box-shadow: 0 0 120px 50px rgba(255, 107, 107, 0.4);
+  animation: sunsetPulse 3s ease-in-out infinite, sunsetMove 15s ease-in-out infinite;
+}
+@keyframes sunsetGradient {
+  0%, 100% { 
+    background: linear-gradient(180deg, #ff6b6b 0%, #ffa500 25%, #ff8c42 50%, #ff6b9d 75%, #c44569 100%);
+  }
+  50% { 
+    background: linear-gradient(180deg, #ff8c42 0%, #ff6b6b 25%, #c44569 50%, #6a2c70 75%, #4a4a6a 100%);
+  }
+}
+@keyframes sunsetPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.9; }
+}
+@keyframes sunsetMove {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(10px) translateY(-10px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+/* Sunrise */
+.app.sunrise .scene { 
+  background: linear-gradient(180deg, #ffecd2 0%, #fcb69f 25%, #ff9a9e 50%, #fecfef 75%, #f5d7da 100%);
+  animation: sunriseGradient 15s ease-in-out infinite;
+}
+.app.sunrise .sun { 
+  opacity: 1;
+  top: 15%;
+  background: radial-gradient(circle at 35% 35%, #fff5e6, #ffd89b 50%, #ffa500);
+  box-shadow: 0 0 100px 40px rgba(255, 179, 0, 0.5);
+  animation: sunrisePulse 4s ease-in-out infinite, sunriseRise 15s ease-in-out infinite;
+}
+@keyframes sunriseGradient {
+  0%, 100% { 
+    background: linear-gradient(180deg, #ffecd2 0%, #fcb69f 25%, #ff9a9e 50%, #fecfef 75%, #f5d7da 100%);
+  }
+  50% { 
+    background: linear-gradient(180deg, #fecfef 0%, #ff9a9e 25%, #fcb69f 50%, #ffecd2 75%, #fff5e6 100%);
+  }
+}
+@keyframes sunrisePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.95; }
+}
+@keyframes sunriseRise {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0); }
+}
+
 
