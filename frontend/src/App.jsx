@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import ChatBot from './ChatBot'
 function useWeather() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -94,6 +95,9 @@ export default function App() {
           ))}
         </div>
       </div>
+      
+      {/* AI Chat Bot */}
+      <ChatBot />
     </div>
   )
 }
