@@ -1,12 +1,33 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from dotenv import load_dotenv
 from weather import fetch_weather
+from ai_chat import chat_with_ai
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/api/chat', methods=['POST'])
+def chat_api():
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '')
+        
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+        
+        ai_response = chat_with_ai(user_message)
+        return jsonify({'response': ai_response})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/weather', methods=['GET'])
