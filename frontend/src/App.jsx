@@ -49,7 +49,7 @@ export default function App() {
   return (
     <div className={`app ${bgClass}`}>
       <div className="overlay">
-        <h1>Weather in Bethlehem, PA</h1>
+        <h1>Weather {data ? `in ${data.city}, ${data.region}` : ''}</h1>
         {loading && <p>Loading...</p>}
         {error && <p className="error">{error}</p>}
         {data && (
