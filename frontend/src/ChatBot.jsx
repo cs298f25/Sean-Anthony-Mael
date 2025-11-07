@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
@@ -79,7 +81,18 @@ export default function ChatBot() {
             {messages.map((msg, idx) => (
               <div key={idx} className={`chatbot-message ${msg.role}`}>
                 <div className="chatbot-message-bubble">
-                  {msg.text}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: (props) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                      ul: (props) => <ul style={{ paddingLeft: '1.25rem', margin: 0 }} {...props} />,
+                      ol: (props) => <ol style={{ paddingLeft: '1.25rem', margin: 0 }} {...props} />,
+                      li: (props) => <li style={{ marginBottom: '0.25rem' }} {...props} />,
+                      strong: (props) => <strong style={{ fontWeight: 700 }} {...props} />,
+                      code: (props) => <code style={{ background: 'rgba(0,0,0,0.1)', padding: '0.1rem 0.3rem', borderRadius: 4 }} {...props} />
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
