@@ -1,45 +1,59 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { getUserId } from '../utils/userId'
+import { useWeatherContext } from '../contexts/WeatherContext'
+import WeatherBackground from '../components/WeatherBackground'
 
-export default function ChatBot() {
-  const [isOpen, setIsOpen] = useState(false)
+export default function ChatBotPage() {
+  const [isOpen, setIsOpen] = useState(true)
   const [messages, setMessages] = useState([
-    { role: 'ai', text: "Hello! I'm your AI assistant. How can I help you today?" }
+    { role: 'ai', text: "Hi! I'm Zen, your study assistant and music expert. I can help with:\n\n• Study strategies and tips\n• Music genre recommendations\n• Music suggestions for studying\n\nWhat would you like help with?" }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const navigate = useNavigate()
+  const { conditionClass, timeOfDay } = useWeatherContext()
+
+  const bgClass = useMemo(() => {
+    if (timeOfDay === 'night') return 'night'
+    if (timeOfDay === 'sunrise') return 'sunrise'
+    if (timeOfDay === 'sunset') return 'sunset'
+    return conditionClass
+  }, [timeOfDay, conditionClass])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
-    if (isOpen) {
-      scrollToBottom()
-      inputRef.current?.focus()
-    }
+    scrollToBottom()
+    inputRef.current?.focus()
   }, [messages, isOpen])
 
   const handleSend = async () => {
     const message = inputValue.trim()
     if (!message || isLoading) return
 
-    // Add user message
     const userMessage = { role: 'user', text: message }
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsLoading(true)
 
     try {
+      const userId = getUserId()
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ 
+          message,
+          user_id: userId 
+        }),
       })
 
       const data = await response.json()
@@ -64,18 +78,19 @@ export default function ChatBot() {
   }
 
   return (
-    <div className="chatbot-container">
-      {isOpen && (
+    <div className={`chatbot-page app ${bgClass} ${timeOfDay} ${conditionClass}`}>
+      <WeatherBackground />
+      <div className="chatbot-page-header overlay">
+        <button className="back-button" onClick={() => navigate('/')}>
+          ← Back to Home
+        </button>
+        <h1>AI Chatbot</h1>
+      </div>
+      
+      <div className="chatbot-container overlay">
         <div className="chatbot-window">
           <div className="chatbot-header">
             <h3>AI Assistant</h3>
-            <button 
-              className="chatbot-close" 
-              onClick={() => setIsOpen(false)}
-              aria-label="Close chat"
-            >
-              ×
-            </button>
           </div>
           <div className="chatbot-messages">
             {messages.map((msg, idx) => (
@@ -129,14 +144,7 @@ export default function ChatBot() {
             </button>
           </div>
         </div>
-      )}
-      <button
-        className="chatbot-toggle"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Toggle chat"
-      >
-        {isOpen ? '×' : '💬'}
-      </button>
+      </div>
     </div>
   )
 }
