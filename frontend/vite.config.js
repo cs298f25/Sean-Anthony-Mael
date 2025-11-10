@@ -6,15 +6,15 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/weather': {
-        target: 'http://localhost:8000',
-        changeOrigin: true
-      },
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
       }
     }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
   }
 })
 
