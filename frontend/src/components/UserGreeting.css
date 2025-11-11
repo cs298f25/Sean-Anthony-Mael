@@ -12,8 +12,19 @@
   font-size: 1rem;
   color: white;
   animation: fadeInSlide 0.5s ease-out;
-  pointer-events: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
   user-select: none;
+}
+
+.user-greeting:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.user-greeting:active {
+  transform: translateY(0);
 }
 
 @keyframes fadeInSlide {

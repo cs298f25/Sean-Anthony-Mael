@@ -1,5 +1,6 @@
 import React from 'react'
 import { getUserId } from '../utils/userId'
+import SettingsModal from './SettingsModal'
 import './UserGreeting.css'
 
 const USER_NAME_KEY = 'app_user_name'
@@ -7,6 +8,7 @@ const USER_NAME_KEY = 'app_user_name'
 export default function UserGreeting() {
   const [name, setName] = React.useState(null)
   const [greeting, setGreeting] = React.useState('')
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false)
 
   React.useEffect(() => {
     // Get user name from localStorage
@@ -51,17 +53,29 @@ export default function UserGreeting() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleNameUpdate = (newName) => {
+    setName(newName)
+  }
+
   // Don't show if no name
   if (!name) {
     return null
   }
 
   return (
-    <div className="user-greeting">
-      <span className="greeting-text">
-        {greeting}, <span className="user-name">{name}</span>
-      </span>
-    </div>
+    <>
+      <div className="user-greeting" onClick={() => setIsSettingsOpen(true)}>
+        <span className="greeting-text">
+          {greeting}, <span className="user-name">{name}</span>
+        </span>
+      </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentName={name}
+        onNameUpdate={handleNameUpdate}
+      />
+    </>
   )
 }
 
