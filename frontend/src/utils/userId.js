@@ -85,22 +85,27 @@ export async function updateUserLocation(latitude, longitude) {
 /**
  * Update user name
  * @param {string} name 
+ * @returns {Promise<void>}
  */
 export async function updateUserName(name) {
   const userId = getUserId();
-  if (!userId) return;
-  
-  try {
-    await fetch(`/api/users/${userId}/name`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name }),
-    });
-    localStorage.setItem(USER_NAME_KEY, name);
-  } catch (error) {
-    console.error('Failed to update user name:', error);
+  if (!userId) {
+    throw new Error('User ID not found');
   }
+  
+  const response = await fetch(`/api/users/${userId}/name`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name }),
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Failed to update name' }));
+    throw new Error(errorData.error || 'Failed to update name');
+  }
+  
+  localStorage.setItem(USER_NAME_KEY, name);
 }
 

@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 import requests
+import json
 
 load_dotenv()
 
@@ -25,8 +26,110 @@ if not api_key:
         "See .env.example for a template."
     )
 
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_and_store_artists_by_genre",
+            "description": "Gets a list of artists for a specific genre, stores them in the database, and returns the list.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "genre": {
+                        "type": "string",
+                        "description": "The music genre (e.g., 'rock', 'pop', 'synthpop')"
+                    }
+                },
+                "required": ["genre"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_and_store_tracks_by_genre",
+            "description": "Gets song recommendations for a specific genre. Fetches artists for the genre, then fetches their top tracks, stores everything in the database, and returns the list of tracks. This is the BEST tool to use when the user asks for songs, music, or tracks in a specific genre.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "genre": {
+                        "type": "string",
+                        "description": "The music genre (e.g., 'rock', 'pop', 'synthpop', 'jazz', 'hip hop')"
+                    }
+                },
+                "required": ["genre"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_and_store_tracks_for_artist_by_name", 
+            "description": "Gets a list of top tracks for a specific artist by their name, stores them, and returns the list.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "artist_name": {
+                        "type": "string",
+                        "description": "The exact name of the artist (e.g., 'Daft Punk', 'The Beatles')"
+                    }
+                },
+                "required": ["artist_name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_and_store_chart_tracks",
+            "description": "Gets the current most popular tracks from the GLOBAL chart (all genres combined). This returns the overall top tracks across all genres. If the user asks for songs in a SPECIFIC GENRE (e.g., 'hip hop songs', 'rock music'), use 'fetch_and_store_tracks_by_genre' instead. Only use this tool when the user asks for general/popular songs without specifying a genre.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_and_store_similar_artists",
+            "description": "Gets a list of artists similar to a given artist, stores them, and returns the list.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "artist_name": {
+                        "type": "string",
+                        "description": "The name of the artist to find similar artists for."
+                    }
+                },
+                "required": ["artist_name"]
+            }
+        }
+    }
+]
 
-def chat_with_ai(user_message):
+
+system_prompt = """You are Zen, a helpful study assistant and music expert. Your role is to:
+
+1. Provide effective studying strategies and tips.
+2. Recommend music based on the user's needs or mood.
+3. **Use the provided tools to find artists, tracks, charts, or similar artists when the user asks for music recommendations.**
+4. After the tool returns data, present it clearly and concisely to the user.
+5. Keep all responses SHORT, clear, and friendly (2-4 sentences maximum).
+6. When presenting music recommendations, list 3-5 items maximum in a simple, readable format.
+
+IMPORTANT:
+- If the user asks for music, ALWAYS use a tool first. Do not make up artists or tracks.
+- **When the user asks for SONGS, TRACKS, or MUSIC in a SPECIFIC GENRE (e.g., "hip hop songs", "rock music", "pop tracks"), ALWAYS use "fetch_and_store_tracks_by_genre" tool** - even if they mention "charts" or "popular". This will get you genre-specific songs.
+- **ONLY use "fetch_and_store_chart_tracks" when the user asks for general/popular songs WITHOUT specifying a genre** (e.g., "what's popular", "top charts", "popular songs").
+- If the user asks for ARTISTS in a genre, use "fetch_and_store_artists_by_genre" tool.
+- If a tool returns an error (check for "error": true in the result), explain the issue to the user and suggest alternatives (e.g., try a different genre, or use the chart tracks tool).
+- **When presenting tracks/songs, ALWAYS use the actual "title" and "artist" values from the tool result. Do NOT use placeholder text like "[Artist Name 1]" or "[Song Title 1]".**
+- Present tool results in a simple, user-friendly format (e.g., "Here are some [genre] songs: [actual song title] by [actual artist name], [actual song title] by [actual artist name]...")
+- Be concise and direct - no long explanations."""
+
+def chat_with_ai(messages_history: list) -> dict:
     """
     Send a message to the AI and get a response using OpenRouter API.
     
@@ -43,14 +146,17 @@ def chat_with_ai(user_message):
             "Get a free API key at https://openrouter.ai/keys"
         )
     
-    # Check API key format (OpenRouter keys typically start with sk-or-v1-)
-    if not api_key.startswith('sk-or-'):
-        raise Exception(
-            f"Invalid API key format. OpenRouter API keys should start with 'sk-or-v1-...'\n"
-            f"Your key appears to start with: {api_key[:10]}...\n"
-            "Please check your .env file and ensure you're using an OpenRouter API key.\n"
-            "Get a free API key at https://openrouter.ai/keys"
-        )
+    api_key_clean = api_key.strip()
+    if len(api_key_clean) > 14:
+        key_preview = f"{api_key_clean[:10]}...{api_key_clean[-4:]}"
+    else:
+        key_preview = "***"  # Too short to preview safely
+    print(f"[DEBUG] Using API key: {key_preview} (length: {len(api_key_clean)})")
+    
+    # Check API key format (OpenRouter keys typically start with sk-or-v1- or sk-or-v2-)
+    if not api_key_clean.startswith('sk-or-'):
+        print(f"[WARNING] API key doesn't start with 'sk-or-'. It starts with: {api_key_clean[:10]}...")
+        # Don't fail here - some keys might have different formats
     
     # Get model from environment or use a default free model
     # meta-llama/llama-3.2-3b-instruct:free is generally the most reliable free model
@@ -67,18 +173,6 @@ def chat_with_ai(user_message):
         "X-Title": os.getenv('OPENROUTER_TITLE', 'Zen Study Assistant'),
     }
     
-    # System prompt to specialize the AI
-    system_prompt = """You are Zen, a helpful study assistant and music expert. Your role is to:
-
-1. Provide effective studying strategies and tips
-2. Recommend music genres that match the user's study needs or mood
-3. Suggest specific music recommendations for studying, focusing, relaxing, or motivation
-4. Keep all responses SHORT, clear, and easy to read (2-4 sentences maximum)
-5. Use bullet points or short paragraphs when helpful
-6. Be friendly and encouraging
-
-Always prioritize brevity and clarity. Format longer responses with line breaks for readability."""
-    
     # Prepare the request payload
     payload = {
         "model": model,
@@ -86,44 +180,52 @@ Always prioritize brevity and clarity. Format longer responses with line breaks 
             {
                 "role": "system",
                 "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_message
             }
-        ]
+        ] + messages_history, 
+        "tools": tools,          
+        "tool_choice": "auto"    
     }
     
-    # List of fallback models to try if the primary model fails
-    # Ordered by reliability - most reliable free models first
-    # Note: Free models may have limited availability or rate limits
     fallback_models = [
         'meta-llama/llama-3.2-3b-instruct:free',  # Most reliable free model
         'microsoft/phi-3-mini-128k-instruct:free',  # Good alternative
+        'google/gemini-flash-1.5-8b:free',  # Generally available
         'google/gemini-2.0-flash-exp:free',  # When available
+        'qwen/qwen-2-7b-instruct:free',  # Alternative
+        'kwaipilot/kat-coder-pro:free',
+        'moonshotai/kimi-linear-48b-a3b-instruct',
+        'openrouter/polaris-alpha',
+        'moonshotai/kimi-k2-thinking',
+        'qwen/qwen3-embedding-0.6b',
+        'amazon/nova-premier-v1',
+        'mistralai/mistral-embed-2312',
+        'google/gemini-embedding-001'
+        'openai/text-embedding-ada-002',
+        'mistralai/codestral-embed-2505',
+        'openai/text-embedding-3-large',
+        'openai/text-embedding-3-small',
+        'perplexity/sonar-pro-search',
+        'mistralai/voxtral-small-24b-2507',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'meituan/longcat-flash-chat:free',
+        'alibaba/tongyi-deepresearch-30b-a3b:free',
+        'deepseek/deepseek-chat-v3.1:free',
+        'openai/gpt-oss-20b:free'
     ]
     
-    # Additional fallback models (may not always be available)
-    additional_fallbacks = [
-        'mistralai/mistral-7b-instruct:free',
-        'huggingface/zephyr-7b-beta:free',
-        'google/gemini-flash-1.5-8b:free',
-    ]
-    
-    # Combine fallbacks, but limit total attempts to avoid too many API calls
-    # Only use first 2 additional fallbacks to keep total model attempts reasonable
-    fallback_models += additional_fallbacks[:2]
-    
+
     # Remove the primary model from fallback list if it's already there
     if model in fallback_models:
         fallback_models = [m for m in fallback_models if m != model]
     
     models_to_try = [model] + fallback_models
-    
     last_error = None
     
+    print(f"[DEBUG] Will try {len(models_to_try)} models: {', '.join(models_to_try)}")
+    
     # Try each model until one works
-    for attempt_model in models_to_try:
+    for idx, attempt_model in enumerate(models_to_try, 1):
+        print(f"[DEBUG] Attempt {idx}/{len(models_to_try)}: Trying model '{attempt_model}'...")
         try:
             # Update payload with current model
             payload['model'] = attempt_model
@@ -147,19 +249,42 @@ Always prioritize brevity and clarity. Format longer responses with line breaks 
                 error_type = error_info.get('type', 'provider_error')
                 error_code = error_info.get('code', response.status_code)
                 
-                # Check for specific error types that indicate model unavailability
+                # Check for authentication/authorization errors first
                 error_lower = error_message.lower()
+                is_auth_error = (
+                    'user not found' in error_lower or
+                    'authentication' in error_lower or
+                    'unauthorized' in error_lower or
+                    'invalid api key' in error_lower or
+                    'api key' in error_lower and ('invalid' in error_lower or 'missing' in error_lower)
+                )
+                
+                if is_auth_error:
+                    raise Exception(
+                        f"Authentication error: {error_message}\n\n"
+                        "This usually means:\n"
+                        "1. Your API key is invalid or expired\n"
+                        "2. Your API key doesn't have access to this model\n"
+                        "3. Your OpenRouter account needs credits\n\n"
+                        "Please check your OPEN_AI_API key at https://openrouter.ai/keys"
+                    )
+                
+                # Check for specific error types that indicate model unavailability
                 is_model_unavailable = (
                     'provider' in error_type.lower() or 
                     'provider' in error_message.lower() or
+                    'provider returned error' in error_lower or
                     'no endpoints' in error_lower or
                     'endpoint not found' in error_lower or
                     'model not found' in error_lower or
-                    'unavailable' in error_lower
+                    'unavailable' in error_lower or
+                    'at capacity' in error_lower or
+                    'rate limit' in error_lower
                 )
                 
                 # If it's a model availability error, try next model
                 if is_model_unavailable:
+                    print(f"[DEBUG] Model '{attempt_model}' unavailable: {error_message}, trying next...")
                     last_error = f"Model '{attempt_model}' unavailable: {error_message}"
                     continue  # Try next model
                 # Other errors, raise them
@@ -180,14 +305,16 @@ Always prioritize brevity and clarity. Format longer responses with line breaks 
             
             # Check if we have a valid response
             if 'choices' in result and len(result['choices']) > 0:
-                content = result['choices'][0]['message']['content']
-                if content:
-                    return content
-                last_error = f"Model {attempt_model} returned empty response"
+                # Get the entire message object from the AI
+                message = result['choices'][0]['message'] 
+                
+                # Check if it has content OR a tool call
+                if message.get("content") or message.get("tool_calls"):
+                    print(f"[DEBUG] Success! Model '{attempt_model}' responded successfully.")
+                    return message # <-- Return the FULL message object (a dict)
+                
+                last_error = f"Model {attempt_model} returned empty/invalid message"
                 continue  # Try next model
-            
-            last_error = f"Model {attempt_model} returned invalid response format"
-            continue  # Try next model
                 
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code if e.response else None
@@ -238,5 +365,8 @@ Always prioritize brevity and clarity. Format longer responses with line breaks 
         "2. Check your OPEN_AI_API key at https://openrouter.ai/keys\n"
         "3. Add credits to your OpenRouter account for more reliable access\n"
         "4. Check OpenRouter status at https://openrouter.ai\n"
-        "5. Try setting OPENROUTER_MODEL in .env to a specific working model"
+        "5. Try setting OPENROUTER_MODEL in .env to a specific model, for example:\n"
+        "   OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free\n"
+        "   or\n"
+        "   OPENROUTER_MODEL=microsoft/phi-3-mini-128k-instruct:free"
     )
