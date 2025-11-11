@@ -1,18 +1,26 @@
-from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask import Flask, jsonify, request, send_from_directory, send_file, session
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import sys
+from pathlib import Path
+import secrets
+
+# Add parent directory to path to allow imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from weather import fetch_weather
 from ai_chat import chat_with_ai
-from database import (
-    init_database, create_user, get_user, update_user_location, update_user_name,
-    add_music, get_music, get_all_music, update_music, delete_music
-)
+from database import services
+from database.database import init_database
+import ai_chat_controller
 
 load_dotenv()
 
 app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
 CORS(app)
+
+app.secret_key = os.getenv("FLASK_KEY")
 
 # Initialize database on startup
 init_database()
@@ -64,8 +72,8 @@ def create_user_endpoint():
         latitude = data.get('latitude')
         longitude = data.get('longitude')
         
-        user_id = create_user(name=name, latitude=latitude, longitude=longitude)
-        user = get_user(user_id)
+        user_id = services.create_user(name=name, latitude=latitude, longitude=longitude)
+        user = services.get_user(user_id)
         return jsonify({'user_id': user_id, 'user': dict(user)}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -74,7 +82,7 @@ def create_user_endpoint():
 def get_user_endpoint(user_id):
     """Get user by user_id."""
     try:
-        user = get_user(user_id)
+        user = services.get_user(user_id)
         if user:
             return jsonify(dict(user))
         return jsonify({'error': 'User not found'}), 404
@@ -92,8 +100,8 @@ def update_user_location_endpoint(user_id):
         if latitude is None or longitude is None:
             return jsonify({'error': 'latitude and longitude are required'}), 400
         
-        update_user_location(user_id, latitude, longitude)
-        user = get_user(user_id)
+        services.update_user_location(user_id, latitude, longitude)
+        user = services.get_user(user_id)
         if user:
             return jsonify(dict(user))
         return jsonify({'error': 'User not found'}), 404
@@ -110,8 +118,20 @@ def update_user_name_endpoint(user_id):
         if not name:
             return jsonify({'error': 'name is required'}), 400
         
-        update_user_name(user_id, name)
-        user = get_user(user_id)
+        services.update_user_name(user_id, name)
+        user = services.get_user(user_id)
+        if user:
+            return jsonify(dict(user))
+        return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<user_id>/visit', methods=['PUT'])
+def update_user_visit_endpoint(user_id):
+    """Update user's last_updated timestamp on visit."""
+    try:
+        services.update_user_visit(user_id)
+        user = services.get_user(user_id)
         if user:
             return jsonify(dict(user))
         return jsonify({'error': 'User not found'}), 404
@@ -130,7 +150,7 @@ def add_music_endpoint():
         if not title:
             return jsonify({'error': 'title is required'}), 400
         
-        music_id = add_music(
+        music_id = services.add_music(
             title=title,
             artist=data.get('artist'),
             album=data.get('album'),
@@ -140,56 +160,38 @@ def add_music_endpoint():
             file_path=data.get('file_path'),
             metadata=data.get('metadata')
         )
-        music = get_music(music_id)
+        music = services.get_music(music_id)
         return jsonify({'music_id': music_id, 'music': dict(music)}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/music', methods=['GET'])
-def get_all_music_endpoint():
-    """Get all music entries."""
+@app.route('/api/artists/by-genre/<string:genre_name>', methods=['GET'])
+def get_artists_by_genre_endpoint(genre_name: str):
+    """
+    On-demand endpoint. Fetches artists from Last.fm,
+    stores them, and returns them from our DB.
+    """
     try:
-        music_list = get_all_music()
-        return jsonify({'music': music_list})
+        artists = services.fetch_and_store_artists_by_genre(genre_name)
+        return jsonify(artists)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/music/<int:music_id>', methods=['GET'])
-def get_music_endpoint(music_id):
-    """Get music by music_id."""
+@app.route('/api/tracks/by-artist/<int:artist_id>', methods=['GET'])
+def get_tracks_by_artist_endpoint(artist_id: int):
+    """
+    On-demand endpoint. Fetches tracks, stores them,
+    and returns them.
+    """
     try:
-        music = get_music(music_id)
-        if music:
-            return jsonify(dict(music))
-        return jsonify({'error': 'Music not found'}), 404
+        artist_name = request.args.get('name')
+        if not artist_name:
+            return jsonify({'error': 'Artist name is required as a query parameter (?name=...)'}), 400
+            
+        tracks = services.fetch_and_store_tracks_by_artist(artist_id, artist_name)
+        return jsonify(tracks)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/music/<int:music_id>', methods=['PUT'])
-def update_music_endpoint(music_id):
-    """Update music entry."""
-    try:
-        data = request.get_json() or {}
-        updated = update_music(music_id, **data)
-        
-        if updated:
-            music = get_music(music_id)
-            return jsonify(dict(music))
-        return jsonify({'error': 'Music not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/music/<int:music_id>', methods=['DELETE'])
-def delete_music_endpoint(music_id):
-    """Delete music entry."""
-    try:
-        deleted = delete_music(music_id)
-        if deleted:
-            return jsonify({'message': 'Music deleted successfully'})
-        return jsonify({'error': 'Music not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 
 # Feature endpoints
 @app.route('/api/weather', methods=['GET'])
@@ -204,20 +206,37 @@ def get_weather():
 
 @app.route('/api/chat', methods=['POST'])
 def chat_api():
-    """Chat with AI."""
+    """Chat with AI, using session for history and tool use."""
     try:
         data = request.get_json()
         user_message = data.get('message', '')
-        user_id = data.get('user_id')  # Optional: track which user is chatting
         
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
         
-        ai_response = chat_with_ai(user_message)
-        return jsonify({'response': ai_response})
+        # Get history from session, or start a new one
+        messages_history = session.get('chat_history', [])
+        
+        # Run the controller logic
+        final_response, updated_history = ai_chat_controller.handle_chat_message(
+            user_message, 
+            messages_history
+        )
+        
+        # Save the updated history back to the session
+        session['chat_history'] = updated_history
+        
+        return jsonify({'response': final_response})
+    
     except Exception as e:
+        # This will catch errors from the AI, network, etc.
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/chat/clear', methods=['POST'])
+def clear_chat_history():
+    """Clears the chat history from the user's session."""
+    session.pop('chat_history', None)
+    return jsonify({'message': 'Chat history cleared'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

@@ -56,15 +56,29 @@ export default function ChatBotPage() {
         }),
       })
 
-      const data = await response.json()
+      // Check if response has content before parsing JSON
+      const text = await response.text()
+      if (!text || !text.trim()) {
+        throw new Error('Empty response from server')
+      }
+
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', parseError)
+        console.error('Response text:', text)
+        throw new Error('Invalid response from server')
+      }
 
       if (response.ok) {
-        setMessages(prev => [...prev, { role: 'ai', text: data.response }])
+        setMessages(prev => [...prev, { role: 'ai', text: data.response || 'No response received' }])
       } else {
-        setMessages(prev => [...prev, { role: 'ai', text: `Error: ${data.error}` }])
+        setMessages(prev => [...prev, { role: 'ai', text: `Error: ${data.error || 'Unknown error'}` }])
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', text: `Error: ${error.message}` }])
+      console.error('Chat error:', error)
+      setMessages(prev => [...prev, { role: 'ai', text: `Error: ${error.message || 'Failed to get response. Please try again.'}` }])
     } finally {
       setIsLoading(false)
     }

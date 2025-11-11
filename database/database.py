@@ -101,6 +101,17 @@ def init_database():
         )
     ''')
 
+    # Populate genres table from insert_data.sql if it exists
+    try:
+        sql_content = read_sql_file('insert_data.sql')
+        if sql_content:
+            cursor.executescript(sql_content)
+            print("Populated genres table from insert_data.sql")
+    except FileNotFoundError:
+        print("insert_data.sql not found, skipping genre population")
+    except Exception as e:
+        print(f"Error populating genres: {e}")
+
     conn.commit()
     conn.close()
     print(f"Database initialized at {DB_PATH}")
