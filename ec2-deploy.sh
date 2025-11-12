@@ -16,6 +16,14 @@ if [ ! -f ".env" ]; then
 fi
 
 echo "✓ .env file found"
+
+# Check for required environment variables
+if ! grep -q "FLASK_KEY" .env 2>/dev/null; then
+    echo "WARNING: FLASK_KEY not found in .env file"
+    echo "  The app uses Flask sessions which require a secret key."
+    echo "  You can generate one with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+fi
+
 echo ""
 
 # Check if we're in the right directory (has src/app.py and frontend/)
@@ -73,8 +81,23 @@ pip install -r requirements.txt --quiet
 echo "✓ Python dependencies installed"
 echo ""
 
+# Setup database directory and initialize database
+echo "Step 6: Setting up database..."
+if [ ! -d "database" ]; then
+    mkdir -p database
+    echo "✓ Database directory created"
+else
+    echo "✓ Database directory already exists"
+fi
+
+# Initialize database (this will create tables if they don't exist)
+echo "Initializing database..."
+python3 init_db.py
+echo "✓ Database initialized"
+echo ""
+
 # Build frontend
-echo "Step 6: Building frontend..."
+echo "Step 7: Building frontend..."
 cd frontend
 
 if [ ! -d "node_modules" ]; then
