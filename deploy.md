@@ -76,12 +76,24 @@ cd ~/project-folder-name
 nano .env
 ```
 
+Add the following environment variables:
+
 ```
 WEATHER_API=your_weather_api_key_here
 GOOGLE_MAPS_KEY=your_google_maps_key_here
 OPEN_AI_API=your_openrouter_api_key_here
 OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
+MUSIC_KEY=your_last_fm_music_api_key_here
+FLASK_KEY=your_secret_key_here
 ```
+
+**Important:** For `FLASK_KEY`, generate a secure random key. You can do this on your local machine or on EC2:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Copy the output and use it as your `FLASK_KEY` value. This is required for Flask sessions (used by the chat feature).
 
 Save: Press `Ctrl + o`, then press Enter and then press 'Ctrl + x'
 
@@ -94,10 +106,11 @@ sh ec2-deploy.sh
 ```
 
 This script will:
-- Check for .env file
+- Check for .env file and verify required environment variables
 - Install Python and Node.js (if needed)
 - Setup virtual environment
 - Install all dependencies
+- Initialize the database (creates tables and populates initial data)
 - Build the frontend
 
 ## Step 6: Run the App
@@ -145,5 +158,12 @@ Your app should now be accessible in your browser.
 
 **App crashes?**
 - Check the terminal for error messages
-- Make sure `.env` file has all required API keys
+- Make sure `.env` file has all required API keys (including `FLASK_KEY`)
 - Make sure frontend is built: `ls frontend/dist` should show files
+- Check that database was initialized: `ls database/app.db` should show the database file
+- If database issues occur, you can reinitialize: `python3 init_db.py`
+
+**Database issues?**
+- The database is automatically initialized when the app starts, but you can also run `python3 init_db.py` manually
+- The database file is located at `database/app.db`
+- If you need to reset the database, delete `database/app.db` and restart the app (it will recreate it)
