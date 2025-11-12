@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 import sys
 from pathlib import Path
-import secrets
 
 # Add parent directory to path to allow imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -59,8 +58,6 @@ def serve_frontend(path):
     else:
         return jsonify({'error': 'Frontend not built. Please run "npm run build" in the frontend directory.'}), 503
 
-
-# API Routes
 
 # User endpoints
 @app.route('/api/users', methods=['POST'])
@@ -138,33 +135,6 @@ def update_user_visit_endpoint(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# Music endpoints
-@app.route('/api/music', methods=['POST'])
-def add_music_endpoint():
-    """Add a new music entry."""
-    try:
-        data = request.get_json()
-        title = data.get('title')
-        
-        if not title:
-            return jsonify({'error': 'title is required'}), 400
-        
-        music_id = services.add_music(
-            title=title,
-            artist=data.get('artist'),
-            album=data.get('album'),
-            genre=data.get('genre'),
-            year=data.get('year'),
-            duration=data.get('duration'),
-            file_path=data.get('file_path'),
-            metadata=data.get('metadata')
-        )
-        music = services.get_music(music_id)
-        return jsonify({'music_id': music_id, 'music': dict(music)}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/artists/by-genre/<string:genre_name>', methods=['GET'])
 def get_artists_by_genre_endpoint(genre_name: str):
     """
@@ -231,12 +201,6 @@ def chat_api():
     except Exception as e:
         # This will catch errors from the AI, network, etc.
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/chat/clear', methods=['POST'])
-def clear_chat_history():
-    """Clears the chat history from the user's session."""
-    session.pop('chat_history', None)
-    return jsonify({'message': 'Chat history cleared'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
