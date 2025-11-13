@@ -4,12 +4,11 @@ import os
 import sys
 from pathlib import Path
 from weather import fetch_weather
+# Add parent directory to path to allow imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from database import services
 from database.database import init_database
 import ai_chat_controller
-
-# Add parent directory to path to allow imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 load_dotenv()
 
