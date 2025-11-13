@@ -205,3 +205,103 @@ def test_update_user_name_endpoint(test_db):
     assert updated_user['name'] == 'Henry Updated', "Name should be saved in database"
     assert updated_user['latitude'] == 34.0522, "Location should remain unchanged"
 
+def test_update_user_location_missing_fields(test_db):
+    """
+    Test: What happens when we try to update location with missing required fields?
+    
+    This test checks that:
+    - The endpoint returns 400 (Bad Request) when latitude is missing
+    - The endpoint returns 400 (Bad Request) when longitude is missing
+    - The endpoint returns 400 (Bad Request) when both are missing
+    - The response contains an appropriate error message
+    """
+    # Step 1: Create a user first
+    user_id = services.create_user(name="Iris", latitude=40.7128, longitude=-74.0060)
+    
+    # Step 2: Try to update location with missing latitude
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/location',
+            json={'longitude': -122.4194},  # Missing latitude
+            content_type='application/json'
+        )
+    
+    # Step 3: Should return 400 (Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    data = response.get_json()
+    assert data['error'] == 'latitude and longitude are required', "Error message should indicate missing fields"
+    
+    # Step 4: Try to update location with missing longitude
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/location',
+            json={'latitude': 37.7749},  # Missing longitude
+            content_type='application/json'
+        )
+    
+    # Step 5: Should return 400 (Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    data = response.get_json()
+    assert data['error'] == 'latitude and longitude are required', "Error message should indicate missing fields"
+    
+    # Step 6: Try to update location with both fields missing
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/location',
+            json={},  # Empty JSON - both fields missing
+            content_type='application/json'
+        )
+    
+    # Step 7: Should return 400 (Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    data = response.get_json()
+    assert data['error'] == 'latitude and longitude are required', "Error message should indicate missing fields"
+    
+    # Step 8: Verify the user's location was NOT changed (should still be original)
+    user = services.get_user(user_id)
+    assert user['latitude'] == 40.7128, "Location should not have changed"
+    assert user['longitude'] == -74.0060, "Location should not have changed"
+
+def test_update_user_name_missing_field(test_db):
+    """
+    Test: What happens when we try to update name with missing or empty name?
+    
+    This test checks that:
+    - The endpoint returns 400 (Bad Request) when name is missing
+    - The endpoint returns 400 (Bad Request) when name is empty string
+    - The response contains an appropriate error message
+    - The user's name was NOT changed
+    """
+    # Step 1: Create a user first
+    user_id = services.create_user(name="Jack", latitude=40.7128, longitude=-74.0060)
+    
+    # Step 2: Try to update name with missing name field
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/name',
+            json={},  # Empty JSON - name field missing
+            content_type='application/json'
+        )
+    
+    # Step 3: Should return 400 (Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    data = response.get_json()
+    assert data['error'] == 'name is required', "Error message should indicate name is required"
+    
+    # Step 4: Try to update name with empty string
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/name',
+            json={'name': ''},  # Empty string
+            content_type='application/json'
+        )
+    
+    # Step 5: Should return 400 (Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    data = response.get_json()
+    assert data['error'] == 'name is required', "Error message should indicate name is required"
+    
+    # Step 6: Verify the user's name was NOT changed (should still be original)
+    user = services.get_user(user_id)
+    assert user['name'] == "Jack", "Name should not have changed"
+
