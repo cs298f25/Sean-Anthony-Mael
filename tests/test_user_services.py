@@ -145,3 +145,22 @@ def test_update_user_visit(test_db):
     # Step 6: Make sure other fields didn't change
     assert updated_user['name'] == "Diana", "Name should remain unchanged"
 
+def test_get_user_not_found(test_db):
+    """
+    Test 6: What happens when we try to get a user that doesn't exist?
+    
+    This test checks that:
+    - get_user() returns None when given a non-existent user_id
+    - The function doesn't crash or raise an error
+    - This is important for error handling in the application
+    """
+    # Step 1: Try to get a user with a fake/non-existent user_id
+    fake_user_id = "this-user-does-not-exist-12345"
+    user = services.get_user(fake_user_id)
+    
+    # Step 2: The function should return None, not crash
+    assert user is None, "get_user should return None for non-existent users"
+    
+    # Step 3: Also test with an empty string (edge case)
+    user_empty = services.get_user("")
+    assert user_empty is None, "get_user should return None for empty string"
