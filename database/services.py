@@ -4,11 +4,11 @@ import traceback
 from typing import Any, Optional, Dict, List
 from .database import get_db_connection, read_sql_file
 import sys
-import music
 from pathlib import Path
 
-# Add src directory to path for music import
+# Add src directory to path for music import (must be before importing music)
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+import music
 
 def create_user(name: Optional[str] = None, latitude: Optional[float] = None, 
                 longitude: Optional[float] = None) -> str:
