@@ -444,3 +444,78 @@ def test_update_visit_nonexistent_user(test_db):
     assert 'error' in data, "Response should contain an error field"
     assert data['error'] == 'User not found', "Error message should be 'User not found'"
 
+def test_get_tracks_by_artist_missing_name(test_db):
+    """
+    Test: What happens when we try to get tracks by artist without the required name query parameter?
+    
+    This test checks that:
+    - The endpoint returns 400 (Bad Request) when the name query parameter is missing
+    - The response contains an appropriate error message
+    - The API validates required query parameters correctly
+    """
+    # Step 1: Try to get tracks without the required ?name= query parameter
+    artist_id = 123  # Any artist ID
+    
+    # Step 2: Use Flask's test client to make a GET request without query parameter
+    with app.test_client() as client:
+        response = client.get(f'/api/tracks/by-artist/{artist_id}')
+    
+    # Step 3: Check the response status code (400 = Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    
+    # Step 4: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 5: Verify the error message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'Artist name is required as a query parameter (?name=...)', "Error message should match expected format"
+
+def test_chat_api_missing_message(test_db):
+    """
+    Test: What happens when we try to send a chat message that is missing or empty?
+    
+    This test checks that:
+    - The endpoint returns 400 (Bad Request) when message is missing
+    - The endpoint returns 400 (Bad Request) when message is empty string
+    - The response contains an appropriate error message
+    - The API validates required request body fields correctly
+    """
+    # Step 1: Try to send a chat request with missing message field
+    with app.test_client() as client:
+        response = client.post(
+            '/api/chat',
+            json={},  # Empty JSON - message field missing
+            content_type='application/json'
+        )
+    
+    # Step 2: Check the response status code (400 = Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    
+    # Step 3: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 4: Verify the error message for missing message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'Message is required', "Error message should be 'Message is required'"
+    
+    # Step 5: Try to send a chat request with empty message string
+    with app.test_client() as client:
+        response = client.post(
+            '/api/chat',
+            json={'message': ''},  # Empty string
+            content_type='application/json'
+        )
+    
+    # Step 6: Check the response status code (400 = Bad Request)
+    assert response.status_code == 400, f"Expected status 400, got {response.status_code}"
+    
+    # Step 7: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 8: Verify the error message for empty message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'Message is required', "Error message should be 'Message is required'"
+
