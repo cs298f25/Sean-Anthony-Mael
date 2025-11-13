@@ -381,3 +381,66 @@ def test_update_location_nonexistent_user(test_db):
     assert 'error' in data, "Response should contain an error field"
     assert data['error'] == 'User not found', "Error message should be 'User not found'"
 
+def test_update_name_nonexistent_user(test_db):
+    """
+    Test: What happens when we try to update name for a user that doesn't exist?
+    
+    This test checks that:
+    - The endpoint returns 404 (Not Found) for non-existent users
+    - The response contains an error message
+    - The API handles this error case gracefully
+    - This ensures consistency with the location endpoint behavior
+    """
+    # Step 1: Try to update name for a fake/non-existent user
+    fake_user_id = "non-existent-user-12345"
+    name_data = {
+        'name': 'New Name'
+    }
+    
+    # Step 2: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{fake_user_id}/name',
+            json=name_data,
+            content_type='application/json'
+        )
+    
+    # Step 3: Check the response status code (404 = Not Found)
+    assert response.status_code == 404, f"Expected status 404, got {response.status_code}"
+    
+    # Step 4: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 5: Verify the error message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'User not found', "Error message should be 'User not found'"
+
+def test_update_visit_nonexistent_user(test_db):
+    """
+    Test: What happens when we try to update visit timestamp for a user that doesn't exist?
+    
+    This test checks that:
+    - The endpoint returns 404 (Not Found) for non-existent users
+    - The response contains an error message
+    - The API handles this error case gracefully
+    - This ensures consistency with the location and name endpoint behavior
+    """
+    # Step 1: Try to update visit timestamp for a fake/non-existent user
+    fake_user_id = "non-existent-user-12345"
+    
+    # Step 2: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(f'/api/users/{fake_user_id}/visit')
+    
+    # Step 3: Check the response status code (404 = Not Found)
+    assert response.status_code == 404, f"Expected status 404, got {response.status_code}"
+    
+    # Step 4: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 5: Verify the error message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'User not found', "Error message should be 'User not found'"
+
