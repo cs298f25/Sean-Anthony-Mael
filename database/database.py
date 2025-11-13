@@ -26,7 +26,7 @@ def init_database():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON")
-    # Create Users table
+    # Create users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id TEXT PRIMARY KEY,
@@ -38,7 +38,7 @@ def init_database():
         )
     ''')
     
-    # Create Music table
+    # Create artists table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS artists (
             artist_id INTEGER PRIMARY KEY AUTOINCREMENT,

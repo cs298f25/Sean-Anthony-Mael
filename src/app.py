@@ -1,23 +1,19 @@
 from flask import Flask, jsonify, request, send_from_directory, send_file, session
-from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 import sys
 from pathlib import Path
-
-# Add parent directory to path to allow imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from weather import fetch_weather
-from ai_chat import chat_with_ai
 from database import services
 from database.database import init_database
 import ai_chat_controller
 
+# Add parent directory to path to allow imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 load_dotenv()
 
 app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
-CORS(app)
 
 app.secret_key = os.getenv("FLASK_KEY")
 

@@ -1,14 +1,14 @@
 import sqlite3
 import uuid
 import traceback
-from typing import Optional, Dict, List
+from typing import Any, Optional, Dict, List
 from .database import get_db_connection, read_sql_file
 import sys
+import music
 from pathlib import Path
 
 # Add src directory to path for music import
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-import music
 
 def create_user(name: Optional[str] = None, latitude: Optional[float] = None, 
                 longitude: Optional[float] = None) -> str:
@@ -35,7 +35,7 @@ def get_user(user_id: str) -> Optional[Dict]:
     conn.close()
     
     if row:
-        return dict(row)
+        return dict[Any, Any](row)
     return None
 
 def update_user_location(user_id: str, latitude: float, longitude: float):
