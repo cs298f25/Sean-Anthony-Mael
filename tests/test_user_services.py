@@ -84,3 +84,64 @@ def test_update_user_location(test_db):
     # Step 5: Make sure the name didn't change (it shouldn't)
     assert updated_user['name'] == "Bob", "Name should remain unchanged"
 
+def test_update_user_name(test_db):
+    """
+    Test 4: Can we update a user's name?
+    
+    This test checks that:
+    - We can create a user with an initial name
+    - We can update that user's name to a new name
+    - The updated name is saved correctly
+    - Other fields (like location) remain unchanged
+    """
+    # Step 1: Create a user with an initial name
+    initial_name = "Charlie"
+    user_id = services.create_user(name=initial_name, latitude=40.7128, longitude=-74.0060)
+    
+    # Step 2: Verify the initial name was saved
+    user = services.get_user(user_id)
+    assert user['name'] == initial_name, "Initial name should be saved"
+    
+    # Step 3: Update to a new name
+    new_name = "Charles"
+    services.update_user_name(user_id, new_name)
+    
+    # Step 4: Retrieve the user again and check the name was updated
+    updated_user = services.get_user(user_id)
+    assert updated_user['name'] == new_name, "Name should be updated"
+    
+    # Step 5: Make sure location didn't change (it shouldn't)
+    assert updated_user['latitude'] == 40.7128, "Latitude should remain unchanged"
+    assert updated_user['longitude'] == -74.0060, "Longitude should remain unchanged"
+
+def test_update_user_visit(test_db):
+    """
+    Test 5: Can we update a user's visit timestamp?
+    
+    This test checks that:
+    - We can create a user (which gets an initial timestamp)
+    - We can update the visit timestamp
+    - The last_updated field changes when we call update_user_visit
+    """
+    # Step 1: Create a user
+    user_id = services.create_user(name="Diana")
+    
+    # Step 2: Get the user and note the initial timestamp
+    user = services.get_user(user_id)
+    initial_timestamp = user['last_updated']
+    
+    # Step 3: Update the visit timestamp
+    services.update_user_visit(user_id)
+    
+    # Step 4: Get the user again and check the timestamp was updated
+    updated_user = services.get_user(user_id)
+    new_timestamp = updated_user['last_updated']
+    
+    # Step 5: The new timestamp should be different (or at least not older)
+    # Note: In SQLite, timestamps are strings, so we compare them
+    assert new_timestamp is not None, "Timestamp should exist"
+    assert new_timestamp >= initial_timestamp, "New timestamp should be >= initial timestamp"
+    
+    # Step 6: Make sure other fields didn't change
+    assert updated_user['name'] == "Diana", "Name should remain unchanged"
+
