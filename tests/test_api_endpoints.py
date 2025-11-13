@@ -117,3 +117,91 @@ def test_get_user_endpoint_not_found(test_db):
     assert 'error' in data, "Response should contain an error field"
     assert data['error'] == 'User not found', "Error message should be 'User not found'"
 
+def test_update_user_location_endpoint(test_db):
+    """
+    Test: Can we update a user's location through the PUT /api/users/<user_id>/location endpoint?
+    
+    This test checks that:
+    - We can update a user's location via PUT request
+    - The response has the correct status code (200)
+    - The location is actually updated in the database
+    - The response contains the updated user data
+    """
+    # Step 1: Create a user first
+    user_id = services.create_user(name="Grace", latitude=40.7128, longitude=-74.0060)
+    
+    # Step 2: Prepare new location data
+    new_location = {
+        'latitude': 47.6062,  # Seattle
+        'longitude': -122.3321
+    }
+    
+    # Step 3: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/location',
+            json=new_location,
+            content_type='application/json'
+        )
+    
+    # Step 4: Check the response status code (200 = success)
+    assert response.status_code == 200, f"Expected status 200, got {response.status_code}"
+    
+    # Step 5: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 6: Verify the location was updated
+    assert data is not None, "Response should contain JSON data"
+    assert data['latitude'] == 47.6062, "Latitude should be updated"
+    assert data['longitude'] == -122.3321, "Longitude should be updated"
+    assert data['name'] == "Grace", "Name should remain unchanged"
+    
+    # Step 7: Verify the update persisted in the database
+    updated_user = services.get_user(user_id)
+    assert updated_user['latitude'] == 47.6062, "Latitude should be saved in database"
+    assert updated_user['longitude'] == -122.3321, "Longitude should be saved in database"
+
+def test_update_user_name_endpoint(test_db):
+    """
+    Test: Can we update a user's name through the PUT /api/users/<user_id>/name endpoint?
+    
+    This test checks that:
+    - We can update a user's name via PUT request
+    - The response has the correct status code (200)
+    - The name is actually updated in the database
+    - The response contains the updated user data
+    - Other fields (like location) remain unchanged
+    """
+    # Step 1: Create a user first with a name and location
+    user_id = services.create_user(name="Henry", latitude=34.0522, longitude=-118.2437)
+    
+    # Step 2: Prepare new name data
+    new_name_data = {
+        'name': 'Henry Updated'
+    }
+    
+    # Step 3: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{user_id}/name',
+            json=new_name_data,
+            content_type='application/json'
+        )
+    
+    # Step 4: Check the response status code (200 = success)
+    assert response.status_code == 200, f"Expected status 200, got {response.status_code}"
+    
+    # Step 5: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 6: Verify the name was updated
+    assert data is not None, "Response should contain JSON data"
+    assert data['name'] == 'Henry Updated', "Name should be updated"
+    assert data['latitude'] == 34.0522, "Latitude should remain unchanged"
+    assert data['longitude'] == -118.2437, "Longitude should remain unchanged"
+    
+    # Step 7: Verify the update persisted in the database
+    updated_user = services.get_user(user_id)
+    assert updated_user['name'] == 'Henry Updated', "Name should be saved in database"
+    assert updated_user['latitude'] == 34.0522, "Location should remain unchanged"
+
