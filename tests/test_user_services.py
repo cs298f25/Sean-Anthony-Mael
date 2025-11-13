@@ -52,3 +52,35 @@ def test_create_user_and_get_user(test_db):
     assert user['latitude'] == latitude, "Latitude should match"
     assert user['longitude'] == longitude, "Longitude should match"
 
+def test_update_user_location(test_db):
+    """
+    Test 3: Can we update a user's location?
+    
+    This test checks that:
+    - We can create a user with an initial location
+    - We can update that user's location to new coordinates
+    - The updated location is saved correctly
+    """
+    # Step 1: Create a user with an initial location
+    initial_lat = 40.7128   # New York
+    initial_lon = -74.0060
+    user_id = services.create_user(name="Bob", latitude=initial_lat, longitude=initial_lon)
+    
+    # Step 2: Verify the initial location was saved
+    user = services.get_user(user_id)
+    assert user['latitude'] == initial_lat, "Initial latitude should be saved"
+    assert user['longitude'] == initial_lon, "Initial longitude should be saved"
+    
+    # Step 3: Update to a new location
+    new_lat = 34.0522   # Los Angeles
+    new_lon = -118.2437
+    services.update_user_location(user_id, new_lat, new_lon)
+    
+    # Step 4: Retrieve the user again and check the location was updated
+    updated_user = services.get_user(user_id)
+    assert updated_user['latitude'] == new_lat, "Latitude should be updated"
+    assert updated_user['longitude'] == new_lon, "Longitude should be updated"
+    
+    # Step 5: Make sure the name didn't change (it shouldn't)
+    assert updated_user['name'] == "Bob", "Name should remain unchanged"
+
