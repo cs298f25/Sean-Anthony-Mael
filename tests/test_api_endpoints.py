@@ -305,3 +305,79 @@ def test_update_user_name_missing_field(test_db):
     user = services.get_user(user_id)
     assert user['name'] == "Jack", "Name should not have changed"
 
+def test_update_user_visit_endpoint(test_db):
+    """
+    Test: Can we update a user's visit timestamp through the PUT /api/users/<user_id>/visit endpoint?
+    
+    This test checks that:
+    - We can update a user's visit timestamp via PUT request
+    - The response has the correct status code (200)
+    - The timestamp is actually updated
+    - The response contains the updated user data
+    """
+    # Step 1: Create a user first
+    user_id = services.create_user(name="Kelly")
+    
+    # Step 2: Get the initial timestamp
+    initial_user = services.get_user(user_id)
+    initial_timestamp = initial_user['last_updated']
+    
+    # Step 3: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(f'/api/users/{user_id}/visit')
+    
+    # Step 4: Check the response status code (200 = success)
+    assert response.status_code == 200, f"Expected status 200, got {response.status_code}"
+    
+    # Step 5: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 6: Verify the response contains user data
+    assert data is not None, "Response should contain JSON data"
+    assert data['user_id'] == user_id, "User ID should match"
+    assert data['name'] == "Kelly", "Name should remain unchanged"
+    
+    # Step 7: Verify the timestamp was updated
+    new_timestamp = data['last_updated']
+    assert new_timestamp is not None, "Timestamp should exist"
+    assert new_timestamp >= initial_timestamp, "New timestamp should be >= initial timestamp"
+    
+    # Step 8: Verify the update persisted in the database
+    updated_user = services.get_user(user_id)
+    assert updated_user['last_updated'] >= initial_timestamp, "Timestamp should be updated in database"
+
+def test_update_location_nonexistent_user(test_db):
+    """
+    Test: What happens when we try to update location for a user that doesn't exist?
+    
+    This test checks that:
+    - The endpoint returns 404 (Not Found) for non-existent users
+    - The response contains an error message
+    - The API handles this error case gracefully
+    """
+    # Step 1: Try to update location for a fake/non-existent user
+    fake_user_id = "non-existent-user-12345"
+    location_data = {
+        'latitude': 40.7128,
+        'longitude': -74.0060
+    }
+    
+    # Step 2: Use Flask's test client to make a PUT request
+    with app.test_client() as client:
+        response = client.put(
+            f'/api/users/{fake_user_id}/location',
+            json=location_data,
+            content_type='application/json'
+        )
+    
+    # Step 3: Check the response status code (404 = Not Found)
+    assert response.status_code == 404, f"Expected status 404, got {response.status_code}"
+    
+    # Step 4: Parse the JSON response
+    data = response.get_json()
+    
+    # Step 5: Verify the error message
+    assert data is not None, "Response should contain JSON data"
+    assert 'error' in data, "Response should contain an error field"
+    assert data['error'] == 'User not found', "Error message should be 'User not found'"
+
