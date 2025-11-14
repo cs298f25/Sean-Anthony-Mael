@@ -61,6 +61,8 @@ npm run dev
 3. **Important:** When configuring Security Group, add these rules:
    - **SSH** (port 22) from **My IP**
    - **Custom TCP** (port 8000) from **Anywhere (0.0.0.0/0)**
+      - This must be configured in **Security Groups** on left-hand side of EC2 Dashboard
+      - Match up the security group being used for your EC2 IP and configure these edits
 4. Select or create a key pair for SSH
 5. Click **Launch Instance**
 
