@@ -193,6 +193,20 @@ def chat_with_ai(messages_history: list) -> dict:
         'qwen/qwen-2-7b-instruct:free',  # Reliable alternative with good reasoning
         'google/gemini-2.0-flash-exp:free',  # Latest Gemini model when available
         'meta-llama/llama-3.1-8b-instruct:free',  # Alternative Llama model
+        'kwaipilot/kat-coder-pro:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'alibaba/tongyi-deepresearch-30b-a3b:free',
+        'meituan/longcat-flash-chat:free',
+        'nvidia/nemotron-nano-9b-v2:free',
+        'openai/gpt-oss-20b:free',
+        'z-ai/glm-4.5-air:free',
+        'qwen/qwen3-coder:free',
+        'moonshotai/kimi-k2:free',
+        'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+        'google/gemma-3n-e2b-it:free',
+        'tngtech/deepseek-r1t2-chimera:free',
+        'mistralai/mistral-small-3.2-24b-instruct:free',
+        'deepseek/deepseek-r1-0528-qwen3-8b:free'
     ]
     
 
