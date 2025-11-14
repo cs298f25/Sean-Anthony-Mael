@@ -23,7 +23,7 @@ def get_longitude_latitude():
     
     return latitude, longitude
 
-
+# Build the URL for the weather data, i.e. temperature, condition, etc.
 def build_weather_url():
     lat, lon = get_longitude_latitude()
     api_key = os.getenv('WEATHER_API')
@@ -31,6 +31,7 @@ def build_weather_url():
         raise RuntimeError('Missing WEATHER_API in environment')
     return f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={lat},{lon}"
 
+# Build the URL for the astronomy data, i.e. sunrise and sunset times.
 def build_astronomy_url():
     lat, lon = get_longitude_latitude()
     api_key = os.getenv('WEATHER_API')
@@ -38,7 +39,7 @@ def build_astronomy_url():
         raise RuntimeError('Missing WEATHER_API in environment')
     return f"http://api.weatherapi.com/v1/astronomy.json?key={api_key}&q={lat},{lon}"
 
-
+# Fetch the weather data from the WeatherAPI using the built URLs.
 def fetch_weather() -> dict:
     f"""
     Fetch current weather for inputted city and state from WeatherAPI.

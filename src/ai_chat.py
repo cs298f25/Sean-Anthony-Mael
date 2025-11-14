@@ -187,30 +187,12 @@ def chat_with_ai(messages_history: list) -> dict:
     }
     
     fallback_models = [
-        'meta-llama/llama-3.2-3b-instruct:free',  # Most reliable free model
-        'microsoft/phi-3-mini-128k-instruct:free',  # Good alternative
-        'google/gemini-flash-1.5-8b:free',  # Generally available
-        'google/gemini-2.0-flash-exp:free',  # When available
-        'qwen/qwen-2-7b-instruct:free',  # Alternative
-        'kwaipilot/kat-coder-pro:free',
-        'moonshotai/kimi-linear-48b-a3b-instruct',
-        'openrouter/polaris-alpha',
-        'moonshotai/kimi-k2-thinking',
-        'qwen/qwen3-embedding-0.6b',
-        'amazon/nova-premier-v1',
-        'mistralai/mistral-embed-2312',
-        'google/gemini-embedding-001'
-        'openai/text-embedding-ada-002',
-        'mistralai/codestral-embed-2505',
-        'openai/text-embedding-3-large',
-        'openai/text-embedding-3-small',
-        'perplexity/sonar-pro-search',
-        'mistralai/voxtral-small-24b-2507',
-        'nvidia/nemotron-nano-12b-v2-vl:free',
-        'meituan/longcat-flash-chat:free',
-        'alibaba/tongyi-deepresearch-30b-a3b:free',
-        'deepseek/deepseek-chat-v3.1:free',
-        'openai/gpt-oss-20b:free'
+        'microsoft/phi-3-mini-128k-instruct:free',  # Fast and reliable alternative
+        'google/gemini-flash-1.5-8b:free',  # Generally available, fast response
+        'deepseek/deepseek-chat-v3.1:free',  # Good performance and quality
+        'qwen/qwen-2-7b-instruct:free',  # Reliable alternative with good reasoning
+        'google/gemini-2.0-flash-exp:free',  # Latest Gemini model when available
+        'meta-llama/llama-3.1-8b-instruct:free',  # Alternative Llama model
     ]
     
 
@@ -247,7 +229,6 @@ def chat_with_ai(messages_history: list) -> dict:
                 error_info = result['error']
                 error_message = error_info.get('message', 'Unknown error')
                 error_type = error_info.get('type', 'provider_error')
-                error_code = error_info.get('code', response.status_code)
                 
                 # Check for authentication/authorization errors first
                 error_lower = error_message.lower()
