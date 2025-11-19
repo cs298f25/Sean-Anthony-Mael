@@ -1,8 +1,4 @@
 flask
 gunicorn
 pytest
-python-dotenv
 requests
-flask-cors
-google-generativeai
-openai
