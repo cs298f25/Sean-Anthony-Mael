@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from database import insert_data
 
 # Database file path - store in the same directory as this script
 DB_PATH = os.path.join(os.path.dirname(__file__), 'app.db')
@@ -40,42 +41,80 @@ def init_database():
             """
         )
 
-        # Table for storing user quiz results
+        # Table for storing skill tests 
         cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS user_quiz_results (
+            f"""
+            CREATE TABLE IF NOT EXISTS skill_tests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                questions_correct INTEGER NOT NULL CHECK(questions_correct >= 0),
-                total_questions INTEGER NOT NULL CHECK(total_questions > 0),
-                category TEXT NOT NULL CHECK(category != ''),
-                CHECK(questions_correct <= total_questions),
-                quiz_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (username) REFERENCES users(username)
+                name TEXT NOT NULL CHECK(name != ''),
+                description TEXT NOT NULL CHECK(description != '')
             );
             """
         )
         
-        # Table for storing question statistics by category
+
+        # Table for storing user quiz results
         cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS question_stats (
+            CREATE TABLE IF NOT EXISTS quiz_results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                question_text TEXT NOT NULL CHECK(question_text != ''),
+                start_time TIMESTAMP NOT NULL,
+                end_time TIMESTAMP NOT NULL,
+                score INTEGER NOT NULL CHECK(score >= 0 AND score <= 100),
+                total_questions INTEGER NOT NULL CHECK(total_questions > 0),
+                FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            """
+        )
+        # Table for storing question information
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prompt TEXT NOT NULL CHECK(prompt != ''),
+                answer TEXT NOT NULL CHECK(answer != ''),
                 category TEXT NOT NULL CHECK(category != ''),
-                right_count INTEGER DEFAULT 0,
-                wrong_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(question_text, category)
+                FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
+            );
+            """
+        )
+
+        # Table for storing the questions in a quiz result
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS quiz_result_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_answer TEXT NOT NULL CHECK(user_answer != ''),
+                is_correct BOOLEAN NOT NULL,
+                FOREIGN KEY (quiz_result_id) REFERENCES quiz_results(id)
+                FOREIGN KEY (question_id) REFERENCES questions(id)
+            );
+            """
+            )
+
+        # Table for storing user stats over time to track progress and improvement over time
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_skill_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                skill_test_id INTEGER NOT NULL,
+                correct_answers INTEGER NOT NULL CHECK(correct_answers >= 0),
+                incorrect_answers INTEGER NOT NULL CHECK(incorrect_answers >= 0),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+                FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
             );
             """
         )
         
         # Create indexes for better query performance
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_quiz_username ON user_quiz_results(username);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_quiz_category ON user_quiz_results(category);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_question_stats_category ON question_stats(category);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_results_user_id ON quiz_results(user_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_results_skill_test_id ON quiz_results(skill_test_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_result_questions_quiz_result_id ON quiz_result_questions(quiz_result_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_result_questions_question_id ON quiz_result_questions(question_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_user_id ON user_skill_stats(user_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_skill_test_id ON user_skill_stats(skill_test_id);")
         conn.commit()
         print(f"Database initialized at {DB_PATH}")
     finally:
@@ -100,9 +139,6 @@ def create_user(username: str):
         conn.commit()
         user_id = cursor.lastrowid
         return user_id
-    except sqlite3.IntegrityError:
-        # User already exists
-        return None
     finally:
         conn.close()
 
@@ -124,150 +160,183 @@ def get_user(username: str):
     finally:
         conn.close()
 
-
-def add_user_quiz_result(username: str, questions_correct: int, total_questions: int, category: str):
-    """Add a user quiz result to the database. Creates the user if they don't exist."""
-    # Validate inputs
-    if not username or not username.strip():
-        raise ValueError("Username cannot be empty")
-    if questions_correct < 0:
-        raise ValueError("questions_correct cannot be negative")
-    if total_questions <= 0:
-        raise ValueError("total_questions must be positive")
-    if questions_correct > total_questions:
-        raise ValueError("questions_correct cannot exceed total_questions")
-    if not category or not category.strip():
-        raise ValueError("Category cannot be empty")
+def start_quiz_session(user_id: int, skill_test_id: int) -> int:
+    """Start a new quiz session for a user and skill test. Returns the quiz result id if successful, None otherwise."""
+    if not user_id or not skill_test_id:
+        raise ValueError("User ID and skill test ID are required")
     
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        # Ensure user exists first (due to foreign key constraint)
-        create_user(username.strip())
-        
         cursor.execute(
             """
-            INSERT INTO user_quiz_results (username, questions_correct, total_questions, category)
+            INSERT INTO quiz_results (user_id, skill_test_id, start_time)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            """,
+            (user_id, skill_test_id)
+        )
+        conn.commit()
+        quiz_result_id = cursor.lastrowid
+        return quiz_result_id
+    finally:
+        conn.close()
+
+def finish_quiz_session(quiz_result_id: int, score: int, total_questions: int):
+    """Finish a quiz session for a user and skill test. Returns True if successful, False otherwise."""
+    if not quiz_result_id or not score or not total_questions:
+        raise ValueError("Quiz result ID, score, and total questions are required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE quiz_results SET end_time = CURRENT_TIMESTAMP, score = ?, total_questions = ? WHERE id = ?
+            """,
+            (score, total_questions, quiz_result_id)
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def list_skill_tests():
+    """List all skill tests. Returns a list of skill test dictionaries if successful, None otherwise."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM skill_tests")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+def get_skill_test_questions(skill_test_id: int, limit: int = 20):
+    """Get the questions for a skill test. Returns a list of question dictionaries if successful, None otherwise."""
+    if not skill_test_id or not limit:
+        raise ValueError("Skill test ID and limit are required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM questions WHERE skill_test_id = ? LIMIT ?", (skill_test_id, limit))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+def record_user_answer(session_id: int, question_id: int, user_answer: str, is_correct: bool):
+    """Record a user answer for a question in a quiz result. Returns True if successful, False otherwise."""
+    if not session_id or not question_id or not user_answer or not is_correct:
+        raise ValueError("Session ID, question ID, user answer, and is correct are required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO quiz_result_questions (session_id, question_id, user_answer, is_correct)
             VALUES (?, ?, ?, ?)
             """,
-            (username.strip(), questions_correct, total_questions, category.strip())
+            (session_id, question_id, user_answer, is_correct)
         )
         conn.commit()
-        result_id = cursor.lastrowid
-        return result_id
+        return True
     finally:
         conn.close()
 
-
-def get_user_quiz_results(username: str = None, category: str = None):
-    """Get user quiz results. Can filter by username and/or category."""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        
-        query = "SELECT * FROM user_quiz_results WHERE 1=1"
-        params = []
-        
-        if username:
-            query += " AND username = ?"
-            params.append(username.strip())
-        
-        if category:
-            query += " AND category = ?"
-            params.append(category.strip())
-        
-        query += " ORDER BY quiz_date DESC"
-        
-        cursor.execute(query, params)
-        results = [dict(row) for row in cursor.fetchall()]
-        return results
-    finally:
-        conn.close()
-
-
-def update_question_stats(question_text: str, category: str, is_correct: bool):
-    """Update question statistics. Increments right_count or wrong_count."""
-    if not question_text or not question_text.strip():
-        raise ValueError("question_text cannot be empty")
-    if not category or not category.strip():
-        raise ValueError("Category cannot be empty")
+def update_question_stats(question_id: int, correct_answers: int, incorrect_answers: int):
+    """Update the question stats for a question. Returns True if successful, False otherwise."""
+    if not question_id or not correct_answers or not incorrect_answers:
+        raise ValueError("Question ID, correct answers, and incorrect answers are required")
     
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        
-        # Use INSERT ... ON CONFLICT for atomic upsert operation
-        if is_correct:
-            cursor.execute(
-                """
-                INSERT INTO question_stats (question_text, category, right_count, wrong_count, created_at, updated_at)
-                VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT(question_text, category) 
-                DO UPDATE SET 
-                    right_count = right_count + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (question_text.strip(), category.strip())
-            )
-        else:
-            cursor.execute(
-                """
-                INSERT INTO question_stats (question_text, category, right_count, wrong_count, created_at, updated_at)
-                VALUES (?, ?, 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT(question_text, category) 
-                DO UPDATE SET 
-                    wrong_count = wrong_count + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (question_text.strip(), category.strip())
-            )
-        
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def get_question_stats(category: str = None):
-    """Get question statistics. Can filter by category."""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        
-        if category:
-            cursor.execute(
-                "SELECT * FROM question_stats WHERE category = ? ORDER BY updated_at DESC",
-                (category.strip(),)
-            )
-        else:
-            cursor.execute("SELECT * FROM question_stats ORDER BY updated_at DESC")
-        
-        results = [dict(row) for row in cursor.fetchall()]
-        return results
-    finally:
-        conn.close()
-
-
-def get_category_stats():
-    """Get aggregated statistics by category."""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        
         cursor.execute(
             """
-            SELECT 
-                category,
-                SUM(right_count) as total_right,
-                SUM(wrong_count) as total_wrong,
-                COUNT(*) as question_count
-            FROM question_stats
-            GROUP BY category
-            ORDER BY category
-            """
+            UPDATE questions SET correct_answers = ?, incorrect_answers = ? WHERE id = ?
+            """,
+            (correct_answers, incorrect_answers, question_id)
         )
-        
-        results = [dict(row) for row in cursor.fetchall()]
-        return results
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def update_user_skill_stats(user_id: int, skill_test_id: int, correct_answers: int, incorrect_answers: int):
+    """Update the user skill stats for a skill test. Returns True if successful, False otherwise."""
+    if not user_id or not skill_test_id or not correct_answers or not incorrect_answers:
+        raise ValueError("User ID, skill test ID, correct answers, and incorrect answers are required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE user_skill_stats SET correct_answers = ?, incorrect_answers = ? WHERE user_id = ? AND skill_test_id = ?
+            )
+            """,
+            (correct_answers, incorrect_answers, user_id, skill_test_id)
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def get_quiz_session(session_id: int):
+    """Get a quiz session by session ID. Returns a quiz session dictionary if successful, None otherwise."""
+    if not session_id:
+        raise ValueError("Session ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM quiz_results WHERE id = ?", (session_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def get_user_history(user_id: int):
+    """Get the history of quiz sessions for a user. Returns a list of quiz session dictionaries if successful, None otherwise."""
+    if not user_id:
+        raise ValueError("User ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM quiz_results WHERE user_id = ?", (user_id,))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+def get_skill_test_leaderboard(skill_test_id: int):
+    """Get the leaderboard for a skill test. Returns a list of user dictionaries if successful, None otherwise."""
+    if not skill_test_id:
+        raise ValueError("Skill test ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM quiz_results WHERE skill_test_id = ? ORDER BY score DESC", (skill_test_id,))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+def get_user_performance(user_id: int):
+    """Get the performance of a user across all skill tests. Returns a list of skill test dictionaries if successful, None otherwise."""
+    if not user_id:
+        raise ValueError("User ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM user_skill_stats WHERE user_id = ?", (user_id,))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
     finally:
         conn.close()
 
