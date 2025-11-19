@@ -39,10 +39,8 @@ def format_track_results_for_ai(tool_result):
                 artist = track.get('artist') or track.get('artist_name', 'Unknown Artist')
                 
                 formatted.append({
-                    'song_title': title,
-                    'artist_name': artist,
-                    'title': title,  # Keep original for compatibility
-                    'artist': artist  # Keep original for compatibility
+                    'title': title,
+                    'artist': artist
                 })
             return formatted
     

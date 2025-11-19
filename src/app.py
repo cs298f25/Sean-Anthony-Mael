@@ -33,6 +33,7 @@ def index():
     else:
         return jsonify({'error': 'Frontend not built. Please run "npm run build" in the frontend directory.'}), 503
 
+# Serve frontend for all other routes
 @app.route('/<path:path>')
 def serve_frontend(path):
     # Don't serve API routes through this handler
