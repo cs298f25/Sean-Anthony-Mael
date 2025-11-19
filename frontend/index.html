@@ -17,41 +17,18 @@
         </header>
 
         <section class="grid" aria-label="Skill Test Categories">
-            <article class="card">
-                <p class="card-eyebrow">Skill Test</p>
-                <h2>File Type Identification</h2>
-                <p>
-                    Explore how well you know core DevOps file formats and their use in common pipelines.
-                </p>
-                <button type="button" aria-label="Open File Type Identification test">Preview</button>
-            </article>
-
-            <article class="card">
-                <p class="card-eyebrow">Skill Test</p>
-                <h2>Terminal</h2>
-                <p>
-                    Simulate on-the-spot CLI tasks that validate navigation and command mastery.
-                </p>
-                <button type="button" aria-label="Open Terminal test">Preview</button>
-            </article>
-
-            <article class="card">
-                <p class="card-eyebrow">Skill Test</p>
-                <h2>Python Virtual Environments and Maven</h2>
-                <p>
-                    Tackle mixed-environment workflows, from venv activation to Maven lifecycle knowledge.
-                </p>
-                <button type="button" aria-label="Open Python Virtual Environments and Maven test">Preview</button>
-            </article>
-
-            <article class="card">
-                <p class="card-eyebrow">Skill Test</p>
-                <h2>Deploy on AWS</h2>
-                <p>
-                    Walk through high-level deployment considerations and the services needed to ship safely.
-                </p>
-                <button type="button" aria-label="Open Deploy on AWS test">Preview</button>
-            </article>
+            {% if skill_tests %}
+                {% for skill_test in skill_tests %}
+                <article class="card">
+                    <p class="card-eyebrow">Skill Test</p>
+                    <h2>{{ skill_test.name }}</h2>
+                    <p>{{ skill_test.description }}</p>
+                    <button type="button" aria-label="Open {{ skill_test.name }} test">Preview</button>
+                </article>
+                {% endfor %}
+            {% else %}
+                <p>No skill tests available.</p>
+            {% endif %}
         </section>
     </main>
 </body>

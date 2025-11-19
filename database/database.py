@@ -121,6 +121,25 @@ def init_database():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_skill_test_id ON user_skill_stats(skill_test_id);")
         conn.commit()
         print(f"Database initialized at {DB_PATH}")
+        
+        # Load and execute insert_data.sql if it exists and table is empty
+        try:
+            # Check if skill_tests table is empty
+            cursor.execute("SELECT COUNT(*) as count FROM skill_tests")
+            count = cursor.fetchone()['count']
+            
+            if count == 0:
+                sql_file_path = os.path.join(os.path.dirname(__file__), 'insert_data.sql')
+                if os.path.exists(sql_file_path):
+                    sql_content = read_sql_file('insert_data.sql')
+                    # Execute the SQL content
+                    cursor.executescript(sql_content)
+                    conn.commit()
+                    print("Data from insert_data.sql loaded successfully")
+            else:
+                print(f"Skill tests table already has {count} entries, skipping insert_data.sql")
+        except Exception as e:
+            print(f"Warning: Could not load insert_data.sql: {e}")
     finally:
         conn.close()
 

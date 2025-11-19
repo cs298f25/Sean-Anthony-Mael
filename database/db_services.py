@@ -86,7 +86,13 @@ def list_skill_tests():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM skill_tests")
         rows = cursor.fetchall()
-        return [dict(row) for row in rows]
+        if rows:
+            return [dict(row) for row in rows]
+        else:
+            return []
+    except Exception as e:
+        print(f"Error listing skill tests: {e}")
+        return []
     finally:
         conn.close()
 

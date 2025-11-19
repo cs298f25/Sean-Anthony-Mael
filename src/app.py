@@ -9,6 +9,7 @@ from services import (
     get_quiz_data_service, get_user_quiz_history_service,
     get_correct_answers_service, get_incorrect_answers_service
 )
+from database.db_services import list_skill_tests
 
 
 
@@ -25,8 +26,11 @@ app.secret_key = os.getenv('FLASK_KEY')
 
 @app.route('/')
 def index():
-    """Root endpoint - serves index.html."""
-    return render_template('index.html')
+    """Root endpoint - serves index.html with skill tests from database."""
+    skill_tests = list_skill_tests()
+    # Debug: print to see what we're getting
+    print(f"Skill tests retrieved: {skill_tests}")
+    return render_template('index.html', skill_tests=skill_tests or [])
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
