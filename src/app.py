@@ -1,11 +1,18 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
+import os
 
-app = Flask(__name__)
+# Configure Flask to use frontend folder for templates and static files
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend'),
+    static_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend'),
+    static_url_path=''
+)
 
 @app.route('/')
 def index():
-    """Root endpoint."""
-    return jsonify({'message': 'Welcome to the Flask server'})
+    """Root endpoint - serves index.html."""
+    return render_template('index.html')
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
