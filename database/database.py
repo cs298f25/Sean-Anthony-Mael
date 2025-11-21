@@ -198,7 +198,14 @@ def login_user(username: str, password: str) -> Optional[dict]:
         return None
 
     stored_hash = user.get("password_hash") or ""
-    if stored_hash and verify_password(password, stored_hash):
+    if not stored_hash:
+        # Migrate existing users created without a password hash
+        new_hash = hash_password(password)
+        _update_user_password(user["id"], new_hash)
+        user["password_hash"] = new_hash
+        return user
+
+    if verify_password(password, stored_hash):
         return user
     return None
 
@@ -239,6 +246,16 @@ def _validate_username(username: str) -> str:
     if not username or not username.strip():
         raise ValueError("Username cannot be empty")
     return username.strip()
+
+
+def _update_user_password(user_id: int, password_hash: str) -> None:
+    """Persist a newly generated password hash for legacy users."""
+    with get_db_connection() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (password_hash, user_id),
+        )
+        conn.commit()
 
 
 def ensure_password_column(cursor: sqlite3.Cursor):

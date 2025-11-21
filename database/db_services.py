@@ -1,71 +1,4 @@
-from typing import Optional
-from database.database import get_db_connection, hash_password, verify_password, _validate_username
-
-def create_user(username: str, password: Optional[str] = None):
-    """Create a new user. Returns the user id if successful, None if user already exists."""
-    normalized_username = _validate_username(username)
-    password_hash = hash_password(password) if password else ''
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO users (username, password_hash)
-            VALUES (?, ?)
-            """,
-            (normalized_username, password_hash)
-        )
-        conn.commit()
-        user_id = cursor.lastrowid
-        return user_id
-    finally:
-        conn.close()
-
-
-def get_user(username: str):
-    """Get user information by username. Returns dict if found, None otherwise."""
-    normalized_username = _validate_username(username)
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM users WHERE username = ?",
-            (normalized_username,)
-        )
-        row = cursor.fetchone()
-        return dict(row) if row else None
-    finally:
-        conn.close()
-
-
-def login_user(username: str, password: str):
-    """Validate credentials. Returns user dict on success or None on failure."""
-    normalized_username = _validate_username(username)
-    if not password:
-        raise ValueError("Password cannot be empty")
-    user = get_user(normalized_username)
-    if not user:
-        return None
-    stored_hash = user.get("password_hash") or ''
-    if not stored_hash:
-        new_hash = hash_password(password)
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                (new_hash, user["id"])
-            )
-            conn.commit()
-            user["password_hash"] = new_hash
-        finally:
-            conn.close()
-        return user
-    if verify_password(password, stored_hash):
-        return user
-    return None
+from database.database import create_user, get_db_connection, get_user, login_user
 
 def start_quiz_session(user_id: int, skill_test_id: int) -> int:
     """Start a new quiz session for a user and skill test. Returns the quiz result id if successful, None otherwise."""
@@ -112,7 +45,10 @@ def list_skill_tests():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM skill_tests")
+        cursor.execute(
+            "SELECT * FROM skill_tests WHERE name != ?",
+            ("File Type Identification",),
+        )
         rows = cursor.fetchall()
         if rows:
             return [dict(row) for row in rows]

@@ -61,22 +61,18 @@
 
             const fallbackCategories = [
                 {
-                    name: 'File Type Identification',
-                    description: 'Explore how well you know core DevOps file formats and their use in common pipelines.'
-            },
-            {
-                name: 'Terminal',
-                description: 'Simulate on-the-spot CLI tasks that validate navigation and command mastery.'
-            },
-            {
-                name: 'Python Virtual Environments and Maven',
-                description: 'Tackle mixed-environment workflows, from venv activation to Maven lifecycle knowledge.'
-            },
-            {
-                name: 'Deploy on AWS',
-                description: 'Walk through high-level deployment considerations and the services needed to ship safely.'
-            }
-        ];
+                    name: 'Terminal',
+                    description: 'Simulate on-the-spot CLI tasks that validate navigation and command mastery.'
+                },
+                {
+                    name: 'Python Virtual Environments and Maven',
+                    description: 'Tackle mixed-environment workflows, from venv activation to Maven lifecycle knowledge.'
+                },
+                {
+                    name: 'Deploy on AWS',
+                    description: 'Walk through high-level deployment considerations and the services needed to ship safely.'
+                }
+            ];
 
         const parseSkillTests = () => {
             const dataEl = document.getElementById('skill-tests-data');
@@ -105,8 +101,14 @@
         };
 
             const categories = (() => {
-                const fromServer = parseSkillTests();
-                return fromServer.length ? fromServer : fallbackCategories;
+                const excluded = new Set(['File Type Identification']);
+                const fromServer = parseSkillTests().filter(
+                    ({ name = '' }) => !excluded.has(name.trim())
+                );
+                const sanitizedFallback = fallbackCategories.filter(
+                    ({ name = '' }) => !excluded.has(name.trim())
+                );
+                return fromServer.length ? fromServer : sanitizedFallback;
             })();
 
             renderCategories(categories);
