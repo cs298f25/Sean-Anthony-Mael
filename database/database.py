@@ -1,5 +1,7 @@
-import sqlite3
+import hashlib
 import os
+import sqlite3
+from typing import Optional
 
 # Database file path - store in the same directory as this script
 DB_PATH = os.path.join(os.path.dirname(__file__), 'app.db')
@@ -34,6 +36,7 @@ def init_database():
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -119,6 +122,7 @@ def init_database():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_result_questions_question_id ON quiz_result_questions(question_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_user_id ON user_skill_stats(user_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_skill_test_id ON user_skill_stats(skill_test_id);")
+        ensure_password_column(cursor)
         conn.commit()
         print(f"Database initialized at {DB_PATH}")
         
@@ -129,7 +133,7 @@ def init_database():
             count = cursor.fetchone()['count']
             
             sql_file_path = os.path.join(os.path.dirname(__file__), 'insert_data.sql')
-            if os.path.exists(sql_file_path):
+            if count == 0 and os.path.exists(sql_file_path):
                 sql_content = read_sql_file('insert_data.sql')
                 # Execute the SQL content
                 try:
@@ -145,20 +149,20 @@ def init_database():
         conn.close()
 
 
-def create_user(username: str):
-    """Create a new user. Returns the user id if successful, None if user already exists."""
-    if not username or not username.strip():
-        raise ValueError("Username cannot be empty")
+def create_user(username: str, password: Optional[str] = None):
+    """Create a new user with optional password. Returns the user id if successful."""
+    normalized_username = _validate_username(username)
+    password_hash = hash_password(password) if password else ''
     
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO users (username)
-            VALUES (?)
+            INSERT INTO users (username, password_hash)
+            VALUES (?, ?)
             """,
-            (username.strip(),)
+            (normalized_username, password_hash)
         )
         conn.commit()
         user_id = cursor.lastrowid
@@ -166,3 +170,80 @@ def create_user(username: str):
     finally:
         conn.close()
 
+
+def get_user(username: str):
+    """Get user information by username. Returns dict if found, None otherwise."""
+    normalized_username = _validate_username(username)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (normalized_username,)
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def login_user(username: str, password: str) -> Optional[dict]:
+    """Validate credentials. Returns user data on success, None on failure."""
+    normalized_username = _validate_username(username)
+    if not password:
+        raise ValueError("Password cannot be empty")
+
+    user = get_user(normalized_username)
+    if user is None:
+        return None
+
+    stored_hash = user.get("password_hash") or ""
+    if stored_hash and verify_password(password, stored_hash):
+        return user
+    return None
+
+
+def hash_password(password: str) -> str:
+    """Hash a password using PBKDF2."""
+    if not password:
+        raise ValueError("Password cannot be empty")
+    salt = os.urandom(16)
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
+    return f"{salt.hex()}:{derived.hex()}"
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Verify a password against a stored PBKDF2 hash."""
+    if not stored_hash:
+        return False
+    try:
+        salt_hex, hash_hex = stored_hash.split(":", 1)
+    except ValueError:
+        return False
+    salt = bytes.fromhex(salt_hex)
+    expected = bytes.fromhex(hash_hex)
+    candidate = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
+    return _constant_time_compare(expected, candidate)
+
+
+def _constant_time_compare(val1: bytes, val2: bytes) -> bool:
+    if len(val1) != len(val2):
+        return False
+    result = 0
+    for x, y in zip(val1, val2):
+        result |= x ^ y
+    return result == 0
+
+
+def _validate_username(username: str) -> str:
+    if not username or not username.strip():
+        raise ValueError("Username cannot be empty")
+    return username.strip()
+
+
+def ensure_password_column(cursor: sqlite3.Cursor):
+    """Add password_hash column for older databases."""
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "password_hash" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for
 from flask import session as flask_session
 import os
 import sys
+import sqlite3
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from database.database import init_database
 from services import (
@@ -9,7 +10,7 @@ from services import (
     get_quiz_data_service, get_user_quiz_history_service,
     get_correct_answers_service, get_incorrect_answers_service
 )
-from database.db_services import list_skill_tests
+from database.db_services import list_skill_tests, create_user, login_user, get_user
 
 
 
@@ -21,10 +22,19 @@ app = Flask(
     static_url_path=''
 )
 init_database()
-# Set secret key for sessions
-app.secret_key = os.getenv('FLASK_KEY')
+# Set secret key for sessions (fallback to a dev default for local use)
+app.secret_key = os.getenv('FLASK_KEY') or 'dev-secret-key'
 
-@app.route('/')
+@app.after_request
+def add_cors_headers(response):
+    """Allow cross-origin requests for local development (e.g., when UI runs on a different port)."""
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+@app.route('/', methods=['GET'])
 def index():
     """Root endpoint - serves index.html with skill tests from database."""
     skill_tests = list_skill_tests()
@@ -36,6 +46,73 @@ def index():
 def health_check():
     """Health check endpoint."""
     return jsonify({'status': 'healthy'})
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """Register a new user with username and password."""
+    data = request.get_json(silent=True) or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required.'}), 400
+
+    try:
+        user_id = create_user(username, password)
+        user = get_user(username)
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Username already exists.'}), 409
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+    flask_session['user_id'] = user_id
+    flask_session['username'] = username
+
+    return jsonify({
+        'user': {
+            'id': user_id,
+            'username': user['username'],
+            'created_at': user['created_at'],
+            'updated_at': user['updated_at']
+        }
+    }), 201
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Authenticate an existing user."""
+    data = request.get_json(silent=True) or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required.'}), 400
+
+    try:
+        user = login_user(username, password)
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+    if user is None:
+        return jsonify({'error': 'Invalid credentials.'}), 401
+
+    flask_session['user_id'] = user['id']
+    flask_session['username'] = user['username']
+
+    return jsonify({
+        'user': {
+            'id': user['id'],
+            'username': user['username'],
+            'created_at': user['created_at'],
+            'updated_at': user['updated_at']
+        }
+    })
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Clear the user session."""
+    flask_session.pop('user_id', None)
+    flask_session.pop('username', None)
+    return jsonify({'status': 'logged_out'})
 
 @app.route('/quiz/start', methods=['POST'])
 def start_quiz():
