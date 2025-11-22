@@ -39,25 +39,24 @@ A full-stack web application designed to help developers practice and assess the
 - Python 3.8+
 - pip (Python package manager)
 
-### Installation
+### Installation & Deployment
 
-1. Clone the repository:
+All installation and deployment steps are located **[here](/deploy.md)**
+
+<!-- For detailed deployment instructions to AWS EC2 with Gunicorn, see [Deployment Guide](deployment/DEPLOYMENT.md). -->
+
+<!-- **Quick deployment on EC2:**
 ```bash
-git clone <repository-url>
-cd Sean-Anthony-Mael
-```
+# After connecting to EC2 and cloning the repo
+bash deployment/setup.sh      # Initial system setup (run once)
+bash deployment/deploy.sh     # Deploy application
+sudo bash deployment/create-service.sh  # Create systemd service
+sudo systemctl start flask-app  # Start the service
+``` -->
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+<!-- ## Development -->
 
-3. Run the application:
-```bash
-python src/app.py
-```
-
-The application will be available at `http://localhost:8000`
+<!-- For development workflows and guidelines, see [Developer Information](developers.md). -->
 
 ### Environment Variables
 
@@ -79,23 +78,13 @@ The application will be available at `http://localhost:8000`
 - **quiz_results**: Quiz session records
 - **quiz_result_questions**: Individual question answers within sessions
 - **user_skill_stats**: Aggregate performance statistics
+- **study_guides**: Provide useful tips on what to study for each skill test
 
-## Deployment
-
-<!-- For detailed deployment instructions to AWS EC2 with Gunicorn, see [Deployment Guide](deployment/DEPLOYMENT.md). -->
-
-<!-- **Quick deployment on EC2:**
+### Database View
+To view the database to see all the tables and data stored within it, run the following command in a terminal window:
 ```bash
-# After connecting to EC2 and cloning the repo
-bash deployment/setup.sh      # Initial system setup (run once)
-bash deployment/deploy.sh     # Deploy application
-sudo bash deployment/create-service.sh  # Create systemd service
-sudo systemctl start flask-app  # Start the service
-``` -->
-
-<!-- ## Development -->
-
-<!-- For development workflows and guidelines, see [Developer Information](developers.md). -->
+python3 database/view_database.py
+```
 
 ## Testing
 
@@ -103,3 +92,7 @@ Run tests with:
 ```bash
 pytest tests/
 ```
+
+# Developmental Process
+
+All information about how the project was approached is located here **[here](/developers.md)**

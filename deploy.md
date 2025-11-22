@@ -3,54 +3,40 @@
 We will be using AWS to deploy our project onto a server and will also be deploying locally to our machine. We are going to implement a CI/CD pipeline (on manual trigger) to make a clean, easy, and efficient integration and deployment processes to our project while it's running so we do not have to tear it down for each update.
 
 # Local Deployment
-### React
-1. Go to the [WeatherAPI](https://www.weatherapi.com/) website and create an API key by creating an account.
 
-2. Insert that API key into a file named `.env` that is located in the root directory of the project with the following format:\
-`WEATHER_API={insert API key}`
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd Sean-Anthony-Mael
+```
 
-3. Go to the [Google Cloud Console](https://console.cloud.google.com) website and create an API key by creating an account.
-
-4. Insert the API key within the same `.env` file as the Weather API key in the following format on the next line:\
-`GOOGLE_MAPS_KEY={insert API key}`
-
-5. Go to the [Last.fm](https://www.last.fm/api/account/create) website and create an account to receive an API key.
-
-6. Insert the API key within the same `.env` file as the previous APIs in the following format on the next line:\
-`MUSIC_KEY={insert API key}`
-
-7. Go to the [OpenRouter](https://openrouter.ai/) website and create an account to receive an API key.
-
-8. Insert the API key within the same `.env` file in the following format in the next line:\
-`OPEN_AI_API={insert API key}`
-
-9. In a terminal window or in your designated IDE terminal, activate a virtual environment with the following commands in order:
+2. Create and activate the virtual environment:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python src/app.py
 ```
 
-10. In the same terminal window, run `python3`, and then input the following commands in order:
+3. Install dependencies:
 ```bash
+pip install -r requirements.txt
+```
+
+(*Optional*)
+4. In a terminal window with the virtual environment active:
+```bash
+python3
 import secrets
 secrets.token_hex(32)
 ```
-   Add the long string into your .env file located in your root directory with the following format:\
-   `FLASK_KEY={insert secrets key}`
+Put the following key inside a file called .env located in the root directory of your project
+with the following name:
+`FLASK_KEY=<insert key>`
 
-11. In a separate terminal window located in the [/frontend](/frontend/) directory, run:
+5. Run the application outside of the REP:
 ```bash
-npm install -D @vitejs/plugin-react
- ```
-
-12. In the same terminal window as step 4, run:
-```bash
-npm run dev
+python src/app.py
 ```
-
-13. Put the link that is shown in the terminal window into a web browser to display the web page.
+6. The application will be up and running at `http://localhost:8000` in your web browser.
 
 # EC2 Deployment Guide
 
@@ -60,9 +46,7 @@ npm run dev
 2. Choose **Ubuntu 22.04 LTS** (free tier: t2.micro or t3.micro)
 3. **Important:** When configuring Security Group, add these rules:
    - **SSH** (port 22) from **My IP**
-   - **Custom TCP** (port 8000) from **Anywhere (0.0.0.0/0)**
-      - This must be configured in **Security Groups** on left-hand side of EC2 Dashboard
-      - Match up the security group being used for your EC2 IP and configure these edits
+   - **HTTP** (port 80) from **the internet**
 4. Select or create a key pair for SSH
 5. Click **Launch Instance**
 
@@ -105,12 +89,7 @@ nano .env
 Add the following environment variables:
 
 ```
-WEATHER_API=your_weather_api_key_here
-GOOGLE_MAPS_KEY=your_google_maps_key_here
-OPEN_AI_API=your_openrouter_api_key_here
-OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
-MUSIC_KEY=your_last_fm_music_api_key_here
-FLASK_KEY=your_secret_key_here
+FLASK_KEY=<your_secret_key_here>
 ```
 
 **Important:** For `FLASK_KEY`, generate a secure random key. You can do this on your local machine or on EC2:
@@ -133,7 +112,6 @@ sh ec2-deploy.sh
 
 This script will:
 - Check for .env file and verify required environment variables
-- Install Python and Node.js (if needed)
 - Setup virtual environment
 - Install all dependencies
 - Initialize the database (creates tables and populates initial data)
@@ -180,11 +158,10 @@ Your app should now be accessible in your browser.
 **Can't connect?**
 - Check Security Group has port 8000 open (Step 1)
 - Make sure the app is still running in your terminal
-- Try accessing `http://your-ec2-ip:8000` (with the port number)
 
 **App crashes?**
 - Check the terminal for error messages
-- Make sure `.env` file has all required API keys (including `FLASK_KEY`)
+- Make sure the `.env` file has the optional but highly recommended `FLASK_KEY`
 - Make sure frontend is built: `ls frontend/dist` should show files
 - Check that database was initialized: `ls database/app.db` should show the database file
 - If database issues occur, you can reinitialize: `python3 init_db.py`
