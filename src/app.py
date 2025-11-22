@@ -4,15 +4,14 @@ import os
 import sys
 import sqlite3
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from database.database import init_database
+from database.database import init_database, create_user, get_user, login_user
 from services import (
     start_quiz_service, submit_answer_service, finish_quiz_service,
     get_quiz_data_service, get_user_quiz_history_service,
-    get_correct_answers_service, get_incorrect_answers_service
+    get_correct_answers_service, get_incorrect_answers_service,
+    get_study_guide_service, get_leaderboard_service 
 )
-from database.db_services import list_skill_tests, create_user, login_user, get_user
-
-
+from database.db_services import list_skill_tests
 
 # Configure Flask to use frontend folder for templates and static files
 app = Flask(
@@ -23,7 +22,7 @@ app = Flask(
 )
 init_database()
 # Set secret key for sessions (fallback to a dev default for local use)
-app.secret_key = os.getenv('FLASK_KEY') or 'dev-secret-key'
+app.secret_key = os.getenv('FLASK_KEY') or 'dev-secret-key' 
 
 @app.after_request
 def add_cors_headers(response):
@@ -41,11 +40,6 @@ def index():
     # Debug: print to see what we're getting
     print(f"Skill tests retrieved: {skill_tests}")
     return render_template('index.html', skill_tests=skill_tests or [])
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy'})
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
@@ -248,6 +242,25 @@ def user_history(username):
     return render_template('history.html', 
                         username=username, 
                         history=history)
+
+@app.route('/preview/<int:skill_test_id>')
+def preview_skill_test(skill_test_id):
+    """Preview page showing leaderboard and study guide for a skill test."""
+    skill_tests = list_skill_tests()
+    skill_test = next((st for st in skill_tests if st['id'] == skill_test_id), None)
+    
+    if not skill_test:
+        return redirect(url_for('index'))
+    
+    leaderboard = get_leaderboard_service(skill_test_id, limit=10)
+    study_guide = get_study_guide_service(skill_test_id)
+    username = flask_session.get('username', '')
+    
+    return render_template('preview.html', 
+                        skill_test=skill_test,
+                        leaderboard=leaderboard,
+                        study_guide=study_guide,
+                        username=username)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

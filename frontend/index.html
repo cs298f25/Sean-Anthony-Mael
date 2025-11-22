@@ -87,15 +87,22 @@
 
         const renderCategories = (items) => {
                 categoriesGrid.innerHTML = '';
-                items.forEach(({ name, description }) => {
+                items.forEach(({ id, name, description }) => {
                     const card = document.createElement('article');
                     card.className = 'card';
+                    const previewBtn = document.createElement('button');
+                    previewBtn.type = 'button';
+                    previewBtn.setAttribute('aria-label', `Open ${name} test preview`);
+                    previewBtn.textContent = 'Preview';
+                    previewBtn.addEventListener('click', () => {
+                        window.location.href = `/preview/${id}`;
+                    });
                     card.innerHTML = `
                     <p class="card-eyebrow">Skill Test</p>
                     <h2>${name}</h2>
                     <p>${description}</p>
-                    <button type="button" aria-label="Open ${name} test">Preview</button>
                 `;
+                card.appendChild(previewBtn);
                 categoriesGrid.appendChild(card);
             });
         };

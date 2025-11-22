@@ -1,4 +1,4 @@
-from database.database import create_user, get_db_connection, get_user, login_user
+from database.database import get_db_connection
 
 def start_quiz_session(user_id: int, skill_test_id: int) -> int:
     """Start a new quiz session for a user and skill test. Returns the quiz result id if successful, None otherwise."""
@@ -214,5 +214,54 @@ def get_incorrect_answers(session_id: int):
         cursor.execute("SELECT * FROM quiz_result_questions WHERE session_id = ? AND is_correct = 0", (session_id,))
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+def get_study_guide_by_skill_test(skill_test_id: int):
+    """Get study guide content for a skill test. Returns a list of study guide entries if successful, None otherwise."""
+    if not skill_test_id:
+        raise ValueError("Skill test ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM study_guides WHERE skill_test_id = ? ORDER BY id ASC",
+            (skill_test_id,)
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows] if rows else []
+    finally:
+        conn.close()
+
+def get_leaderboard_by_skill_test(skill_test_id: int, limit: int = 10):
+    """Get leaderboard for a skill test with user information. Returns a list of leaderboard entries if successful, None otherwise."""
+    if not skill_test_id:
+        raise ValueError("Skill test ID is required")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT 
+                qr.id,
+                qr.score,
+                qr.total_questions,
+                qr.start_time,
+                qr.end_time,
+                u.username,
+                st.name as skill_test_name
+            FROM quiz_results qr
+            JOIN users u ON qr.user_id = u.id
+            JOIN skill_tests st ON qr.skill_test_id = st.id
+            WHERE qr.skill_test_id = ?
+            ORDER BY qr.score DESC, qr.end_time ASC
+            LIMIT ?
+            """,
+            (skill_test_id, limit)
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows] if rows else []
     finally:
         conn.close()

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview - {{ skill_test.name }}</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <p class="eyebrow">Preview</p>
+            <h1>{{ skill_test.name }}</h1>
+            <p class="lead">{{ skill_test.description }}</p>
+        </header>
+
+        <section class="preview-grid">
+            <div class="preview-column">
+                <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 500;">Leaderboard</h2>
+                {% if leaderboard %}
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Username</th>
+                                <th>Score</th>
+                                <th>Questions</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in leaderboard %}
+                                <tr>
+                                    <td class="rank">{{ loop.index }}</td>
+                                    <td class="username">{{ entry.username }}</td>
+                                    <td class="score">{{ "%.1f"|format(entry.score) }}%</td>
+                                    <td class="questions">{{ entry.total_questions }}</td>
+                                    <td class="date">{{ entry.end_time[:10] if entry.end_time else 'N/A' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 2rem;">
+                        No leaderboard data available yet. Take the skill test to see your progress over time!
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="preview-column">
+                <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 500;">Study Guide</h2>
+                {% if study_guide %}
+                    <article class="study-entry">
+                        <ul class="study-list">
+                            {% for entry in study_guide %}
+                                {% for line in entry.content.split('\n') %}
+                                    {% if line.strip() %}
+                                        <li>{{ line.strip() }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </article>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 2rem;">
+                        No study guide content available for this skill test yet.
+                    </p>
+                {% endif %}
+            </div>
+        </section>
+
+        <div style="text-align: center; margin-top: 3rem; display: flex; gap: 1rem; justify-content: center;">
+            <a href="/" style="text-decoration: none;">
+                <button type="button" class="ghost-btn">Back to Home</button>
+            </a>
+            <form method="POST" action="/quiz/start" style="display: inline;">
+                <input type="hidden" name="skill_test_id" value="{{ skill_test.id }}">
+                <input type="hidden" name="username" value="{{ username }}">
+                <button type="submit" class="primary-btn">Start Test</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

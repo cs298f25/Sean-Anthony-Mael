@@ -1,9 +1,11 @@
 from database.db_services import (
-    create_user, get_user, start_quiz_session, finish_quiz_session,
+    start_quiz_session, finish_quiz_session,
     get_skill_test_questions, record_user_answer, get_quiz_session,
     update_question_stats, get_user_history, get_correct_answers, get_incorrect_answers,
     get_skill_test_leaderboard, get_user_performance
 )
+from database.database import create_user, get_user
+
 def start_quiz_service(username: str, skill_test_id: int):
     """Start a new quiz session for a user. Returns session data with questions."""
     # Ensure user exists
@@ -82,6 +84,16 @@ def get_user_quiz_history_service(username: str):
 def get_skill_test_leaderboard_service(skill_test_id: int):
     """Get the leaderboard for a skill test."""
     return get_skill_test_leaderboard(skill_test_id)
+
+def get_study_guide_service(skill_test_id: int):
+    """Get study guide content for a skill test."""
+    from database.db_services import get_study_guide_by_skill_test
+    return get_study_guide_by_skill_test(skill_test_id)
+
+def get_leaderboard_service(skill_test_id: int, limit: int = 10):
+    """Get leaderboard for a skill test with user info."""
+    from database.db_services import get_leaderboard_by_skill_test
+    return get_leaderboard_by_skill_test(skill_test_id, limit)
 
 def get_user_performance_service(user_id: int):
     """Get the performance of a user across all skill tests."""

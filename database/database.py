@@ -45,7 +45,7 @@ def init_database():
 
         # Table for storing skill tests 
         cursor.execute(
-            f"""
+            """
             CREATE TABLE IF NOT EXISTS skill_tests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL CHECK(name != ''),
@@ -114,6 +114,18 @@ def init_database():
             );
             """
         )
+
+        # Table for storing study guides
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS study_guides (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                skill_test_id INTEGER NOT NULL,
+                content TEXT NOT NULL CHECK(content != ''),
+                FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
+            );
+            """
+        )
         
         # Create indexes for better query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_results_user_id ON quiz_results(user_id);")
@@ -151,7 +163,7 @@ def init_database():
 
 def create_user(username: str, password: Optional[str] = None):
     """Create a new user with optional password. Returns the user id if successful."""
-    normalized_username = _validate_username(username)
+    normalized_username = validate_username(username)
     password_hash = hash_password(password) if password else ''
     
     conn = get_db_connection()
@@ -173,7 +185,7 @@ def create_user(username: str, password: Optional[str] = None):
 
 def get_user(username: str):
     """Get user information by username. Returns dict if found, None otherwise."""
-    normalized_username = _validate_username(username)
+    normalized_username = validate_username(username)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -189,7 +201,7 @@ def get_user(username: str):
 
 def login_user(username: str, password: str) -> Optional[dict]:
     """Validate credentials. Returns user data on success, None on failure."""
-    normalized_username = _validate_username(username)
+    normalized_username = validate_username(username)
     if not password:
         raise ValueError("Password cannot be empty")
 
@@ -201,7 +213,7 @@ def login_user(username: str, password: str) -> Optional[dict]:
     if not stored_hash:
         # Migrate existing users created without a password hash
         new_hash = hash_password(password)
-        _update_user_password(user["id"], new_hash)
+        update_user_password(user["id"], new_hash)
         user["password_hash"] = new_hash
         return user
 
@@ -230,10 +242,11 @@ def verify_password(password: str, stored_hash: str) -> bool:
     salt = bytes.fromhex(salt_hex)
     expected = bytes.fromhex(hash_hex)
     candidate = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
-    return _constant_time_compare(expected, candidate)
+    return constant_time_compare(expected, candidate)
 
 
-def _constant_time_compare(val1: bytes, val2: bytes) -> bool:
+def constant_time_compare(val1: bytes, val2: bytes) -> bool:
+    """Compare two bytes objects in constant time."""
     if len(val1) != len(val2):
         return False
     result = 0
@@ -242,13 +255,14 @@ def _constant_time_compare(val1: bytes, val2: bytes) -> bool:
     return result == 0
 
 
-def _validate_username(username: str) -> str:
+def validate_username(username: str) -> str:
+    """Validate a username. Returns the username if valid, raises an error if invalid."""
     if not username or not username.strip():
         raise ValueError("Username cannot be empty")
     return username.strip()
 
 
-def _update_user_password(user_id: int, password_hash: str) -> None:
+def update_user_password(user_id: int, password_hash: str) -> None:
     """Persist a newly generated password hash for legacy users."""
     with get_db_connection() as conn:
         conn.execute(
