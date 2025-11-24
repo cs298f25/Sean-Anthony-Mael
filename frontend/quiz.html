@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ skill_test.name if skill_test else 'Skill Test' }} - Question {{ question_number }}</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <p class="eyebrow">{{ skill_test.name if skill_test else 'Skill Test' }}</p>
+            <h1>Question {{ question_number }} of {{ total_questions }}</h1>
+            {% if skill_test and skill_test.description %}
+                <p class="lead">{{ skill_test.description }}</p>
+            {% endif %}
+        </header>
+
+        <section class="quiz-container">
+            <article class="question-card">
+                <div class="question-meta">
+                    <span class="badge">Prompt</span>
+                    <p class="question-category">{{ current_question.category }}</p>
+                </div>
+                <h2 class="question-prompt">{{ current_question.prompt }}</h2>
+
+                <form id="answer-form" method="POST" action="{{ url_for('submit_answer') }}">
+                    <input type="hidden" name="session_id" value="{{ session_id }}">
+                    <input type="hidden" name="question_id" value="{{ current_question.id }}">
+                    <input type="hidden" name="correct_answer" value="{{ current_question.answer }}">
+
+                    <label class="answer-label" for="answer-input">Your answer</label>
+                    <textarea 
+                        id="answer-input" 
+                        name="answer" 
+                        rows="4" 
+                        class="answer-input" 
+                        required>{{ current_answer }}</textarea>
+                </form>
+
+                <div class="quiz-actions">
+                    {% if question_number == 1 %}
+                        <a href="/" style="text-decoration: none;">
+                            <button type="button" class="ghost-btn">Back to Home</button>
+                        </a>
+                    {% else %}
+                        <form method="GET" action="{{ url_for('quiz_page', session_id=session_id) }}">
+                            <input type="hidden" name="direction" value="prev">
+                            <button type="submit" class="ghost-btn">Go Back</button>
+                        </form>
+                    {% endif %}
+
+                    <div class="quiz-actions-right">
+                        {% if question_number < total_questions %}
+                            <button type="submit" form="answer-form" class="primary-btn">
+                                Next Question
+                            </button>
+                        {% else %}
+                            <button 
+                                type="submit" 
+                                form="answer-form" 
+                                class="primary-btn"
+                                formaction="{{ url_for('finish_quiz', session_id=session_id) }}">
+                                Submit Test
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+</body>
+</html>
+

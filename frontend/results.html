@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results - {{ skill_test.name if skill_test else 'Skill Test' }}</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <p class="eyebrow">Quiz Complete</p>
+            <h1>{{ skill_test.name if skill_test else 'Skill Test' }} Results</h1>
+            <div class="score-display">
+                <div class="score-circle">
+                    <span class="score-value">{{ "%.1f"|format(results.score) }}%</span>
+                </div>
+                <p class="score-details">
+                    {% set correct = results.correct_count if results.correct_count is defined else (results.total_questions - (results.incorrect_count if results.incorrect_count is defined else 0)) %}
+                    {{ correct }} out of {{ results.total_questions }} correct
+                </p>
+            </div>
+        </header>
+
+        <section class="results-container">
+            <h2 style="margin-bottom: 2rem; font-size: 1.5rem; font-weight: 500;">Question Review</h2>
+            
+            {% if all_answers %}
+                <div class="answers-list">
+                    {% for answer in all_answers %}
+                        <article class="answer-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
+                            <div class="answer-header">
+                                <div class="answer-status">
+                                    {% if answer.is_correct %}
+                                        <span class="status-badge correct-badge">✓ Correct</span>
+                                    {% else %}
+                                        <span class="status-badge incorrect-badge">✗ Incorrect</span>
+                                    {% endif %}
+                                    <span class="question-number">Question {{ loop.index }}</span>
+                                </div>
+                                <span class="question-category">{{ answer.category }}</span>
+                            </div>
+                            
+                            <div class="answer-content">
+                                <div class="question-prompt">
+                                    <strong>Question:</strong>
+                                    <p>{{ answer.prompt }}</p>
+                                </div>
+                                
+                                <div class="answer-comparison">
+                                    <div class="answer-item">
+                                        <strong>Your Answer:</strong>
+                                        <p class="user-answer">{{ answer.user_answer }}</p>
+                                    </div>
+                                    
+                                    {% if not answer.is_correct %}
+                                        <div class="answer-item">
+                                            <strong>Correct Answer:</strong>
+                                            <p class="correct-answer">{{ answer.correct_answer }}</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: var(--muted); text-align: center; padding: 2rem;">
+                    No answers found for this quiz.
+                </p>
+            {% endif %}
+        </section>
+
+        <div style="text-align: center; margin-top: 3rem; display: flex; gap: 1rem; justify-content: center;">
+            <a href="/" style="text-decoration: none;">
+                <button type="button" class="primary-btn">Back to Home</button>
+            </a>
+        </div>
+    </main>
+</body>
+</html>
+

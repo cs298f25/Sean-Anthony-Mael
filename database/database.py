@@ -66,9 +66,9 @@ def init_database():
                 skill_test_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
                 start_time TIMESTAMP NOT NULL,
-                end_time TIMESTAMP NOT NULL,
-                score INTEGER NOT NULL CHECK(score >= 0 AND score <= 100),
-                total_questions INTEGER NOT NULL CHECK(total_questions > 0),
+                end_time TIMESTAMP,
+                score INTEGER DEFAULT 0 CHECK(score >= 0 AND score <= 100),
+                total_questions INTEGER DEFAULT 0,
                 FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );

@@ -8,7 +8,7 @@ from database.database import init_database, create_user, get_user, login_user
 from services import (
     start_quiz_service, submit_answer_service, finish_quiz_service,
     get_quiz_data_service, get_user_quiz_history_service,
-    get_correct_answers_service, get_incorrect_answers_service,
+    get_all_answers_with_questions_service,
     get_study_guide_service, get_leaderboard_service 
 )
 from database.db_services import list_skill_tests
@@ -36,10 +36,7 @@ def add_cors_headers(response):
 @app.route('/', methods=['GET'])
 def index():
     """Root endpoint - serves index.html with skill tests from database."""
-    skill_tests = list_skill_tests()
-    # Debug: print to see what we're getting
-    print(f"Skill tests retrieved: {skill_tests}")
-    return render_template('index.html', skill_tests=skill_tests or [])
+    return render_template('index.html', skill_tests=list_skill_tests())
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
@@ -118,20 +115,24 @@ def start_quiz():
         return redirect(url_for('index'))
     
     try:
-        skill_test_id = int(skill_test_id)
-        # Start quiz using service
-        quiz_data = start_quiz_service(username, skill_test_id)
+        quiz_data = start_quiz_service(username, int(skill_test_id))
+        if not quiz_data.get('questions'):
+            return redirect(url_for('index'))
         
-        # Store session_id in Flask session for tracking
-        flask_session['quiz_session_id'] = quiz_data['session_id']
-        flask_session['username'] = username
-        flask_session['questions'] = quiz_data['questions']  # Store questions list
-        flask_session['current_question_index'] = 0  # Start at first question
-        
-        # Redirect to quiz page with session_id
+        flask_session.update({
+            'quiz_session_id': quiz_data['session_id'],
+            'username': username,
+            'questions': quiz_data['questions'],
+            'current_question_index': 0,
+            'answers': {}
+        })
         return redirect(url_for('quiz_page', session_id=quiz_data['session_id']))
     except (ValueError, KeyError):
         return redirect(url_for('index'))
+
+def _get_skill_test(skill_test_id):
+    """Helper to get skill test by ID."""
+    return next((st for st in list_skill_tests() if st.get('id') == skill_test_id), None)
 
 @app.route('/quiz/<int:session_id>')
 def quiz_page(session_id):
@@ -140,80 +141,116 @@ def quiz_page(session_id):
     if flask_session.get('quiz_session_id') != session_id:
         return redirect(url_for('index'))
     
-    # Get current question index and questions from session
-    current_index = flask_session.get('current_question_index', 0)
     questions = flask_session.get('questions', [])
-    
-    if not questions or current_index >= len(questions):
+    if not questions:
         return redirect(url_for('index'))
+
+    current_index = max(0, min(flask_session.get('current_question_index', 0), len(questions) - 1))
+    direction = request.args.get('direction')
     
-    # Get current question
+    if direction == 'prev' and current_index > 0:
+        current_index -= 1
+    elif direction == 'next' and current_index < len(questions) - 1:
+        current_index += 1
+    
+    flask_session['current_question_index'] = current_index
     current_question = questions[current_index]
     quiz_data = get_quiz_data_service(session_id)
-
+    answers = flask_session.get('answers', {})
+    
     return render_template('quiz.html', 
                     session_id=session_id,
                     current_question=current_question,
                     question_number=current_index + 1,
                     total_questions=len(questions),
-                    quiz_data=quiz_data)
+                    quiz_data=quiz_data,
+                    current_answer=answers.get(str(current_question.get('id')), ''),
+                    skill_test=_get_skill_test(quiz_data.get('skill_test_id')) if quiz_data else None)
 
 @app.route('/quiz/submit', methods=['POST'])
 def submit_answer():
     """Handle answer submission."""
-    session_id = request.form.get('session_id', '').strip()
-    question_id = request.form.get('question_id', '').strip()
-    user_answer = request.form.get('answer', '').strip()
-    correct_answer = request.form.get('correct_answer', '').strip()
-    
-    if not all([question_id, user_answer, correct_answer]):
-        return redirect(url_for('quiz_page', session_id=session_id))
-    
     try:
-        session_id = int(session_id)
-        question_id = int(question_id)
+        session_id = int(request.form.get('session_id', 0))
+        question_id = int(request.form.get('question_id', 0))
+        user_answer = request.form.get('answer', '').strip()
+        correct_answer = request.form.get('correct_answer', '').strip()
         
-        # Submit answer using service
-        submit_answer_service(session_id, question_id, user_answer, correct_answer)
+        if not all([session_id, question_id, user_answer, correct_answer]):
+            return redirect(url_for('quiz_page', session_id=session_id))
         
-        # Get current question index and increment it
-        current_index = flask_session.get('current_question_index', 0)
+        if flask_session.get('quiz_session_id') != session_id:
+            return redirect(url_for('index'))
+        
         questions = flask_session.get('questions', [])
-        next_index = current_index + 1
+        current_index = flask_session.get('current_question_index', 0)
         
-        # Move to next question (or stay on last question if done)
-        if next_index < len(questions):
-            # More questions remaining, move to next
-            flask_session['current_question_index'] = next_index
+        if not questions or current_index >= len(questions):
+            return redirect(url_for('index'))
+        
+        # Verify we're answering the current question
+        if questions[current_index].get('id') != question_id:
             return redirect(url_for('quiz_page', session_id=session_id))
-        else:
-            # All questions answered, stay on last question to show submit button
-            flask_session['current_question_index'] = current_index  # Stay on last question
-            return redirect(url_for('quiz_page', session_id=session_id))
-            
-    except ValueError:
+        
+        # Store answer
+        answers = flask_session.get('answers', {})
+        answers[str(question_id)] = user_answer
+        flask_session['answers'] = answers
+        
+        # Save to database (continue on error)
+        try:
+            submit_answer_service(session_id, question_id, user_answer, correct_answer)
+        except Exception:
+            pass
+        
+        # Move to next question if available
+        next_index = current_index + 1
+        flask_session['current_question_index'] = min(next_index, len(questions) - 1)
+        return redirect(url_for('quiz_page', session_id=session_id))
+    except (ValueError, KeyError):
         return redirect(url_for('index'))
 
 @app.route('/quiz/<int:session_id>/finish', methods=['POST'])
 def finish_quiz(session_id):
-    """Finish quiz and show results. Only accessible via POST (button click)."""
+    """Finish quiz and show results."""
+    # Save final answer if provided
+    question_id = request.form.get('question_id')
+    user_answer = request.form.get('answer', '').strip()
+    correct_answer = request.form.get('correct_answer', '').strip()
     
-    # Verify all questions have been answered
-    current_index = flask_session.get('current_question_index', 0)
+    if question_id and user_answer and correct_answer:
+        try:
+            question_id_int = int(question_id)
+            answers = flask_session.get('answers', {})
+            answers[str(question_id_int)] = user_answer
+            flask_session['answers'] = answers
+            try:
+                submit_answer_service(session_id, question_id_int, user_answer, correct_answer)
+            except Exception:
+                pass
+        except ValueError:
+            pass
+    
+    # Verify all questions answered
     questions = flask_session.get('questions', [])
-    if current_index < len(questions) - 1:
-        # Not all questions answered yet, redirect back to quiz
+    answers = flask_session.get('answers', {})
+    
+    if not questions:
+        return redirect(url_for('index'))
+    
+    unanswered = [idx for idx, q in enumerate(questions) if str(q.get('id')) not in answers]
+    if unanswered:
+        flask_session['current_question_index'] = unanswered[0]
         return redirect(url_for('quiz_page', session_id=session_id))
     
+    # Finish quiz
     results = finish_quiz_service(session_id)
-    
     if not results:
         return redirect(url_for('index'))
     
-    # Clear quiz tracking from session (keep username)
-    flask_session.pop('quiz_session_id', None)
-    flask_session.pop('questions', None)
-    flask_session.pop('current_question_index', None)
+    # Clear session
+    for key in ['quiz_session_id', 'questions', 'current_question_index', 'answers']:
+        flask_session.pop(key, None)
     
     return redirect(url_for('show_results', session_id=session_id))
 
@@ -221,19 +258,19 @@ def finish_quiz(session_id):
 def show_results(session_id):
     """Display quiz results."""
     quiz_data = get_quiz_data_service(session_id)
-    correct_answers = get_correct_answers_service(session_id)
-    incorrect_answers = get_incorrect_answers_service(session_id)
-    results = finish_quiz_service(session_id)
+    if not quiz_data:
+        return redirect(url_for('index'))
     
-    if not quiz_data or not results:
+    results = finish_quiz_service(session_id)
+    if not results:
         return redirect(url_for('index'))
     
     return render_template('results.html', 
                         session_id=session_id,
                         results=results,
                         quiz_data=quiz_data,
-                        correct_answers=correct_answers,
-                        incorrect_answers=incorrect_answers)
+                        all_answers=get_all_answers_with_questions_service(session_id),
+                        skill_test=_get_skill_test(quiz_data.get('skill_test_id')))
 
 @app.route('/history/<username>')
 def user_history(username):
@@ -246,21 +283,15 @@ def user_history(username):
 @app.route('/preview/<int:skill_test_id>')
 def preview_skill_test(skill_test_id):
     """Preview page showing leaderboard and study guide for a skill test."""
-    skill_tests = list_skill_tests()
-    skill_test = next((st for st in skill_tests if st['id'] == skill_test_id), None)
-    
+    skill_test = _get_skill_test(skill_test_id)
     if not skill_test:
         return redirect(url_for('index'))
     
-    leaderboard = get_leaderboard_service(skill_test_id, limit=10)
-    study_guide = get_study_guide_service(skill_test_id)
-    username = flask_session.get('username', '')
-    
     return render_template('preview.html', 
                         skill_test=skill_test,
-                        leaderboard=leaderboard,
-                        study_guide=study_guide,
-                        username=username)
+                        leaderboard=get_leaderboard_service(skill_test_id, limit=10),
+                        study_guide=get_study_guide_service(skill_test_id),
+                        username=flask_session.get('username', ''))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
