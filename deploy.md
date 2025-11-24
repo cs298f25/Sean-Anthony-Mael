@@ -32,7 +32,7 @@ Put the following key inside a file called .env located in the root directory of
 with the following name:
 `FLASK_KEY=<insert key>`
 
-5. Run the application outside of the REP:
+5. Run the application outside of the REPL:
 ```bash
 python src/app.py
 ```
