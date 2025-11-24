@@ -39,24 +39,35 @@ A full-stack web application designed to help developers practice and assess the
 - Python 3.8+
 - pip (Python package manager)
 
-### Installation & Deployment
+### Installation
 
-All installation and deployment steps are located **[here](/deploy.md)**
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd Sean-Anthony-Mael
+```
 
-<!-- For detailed deployment instructions to AWS EC2 with Gunicorn, see [Deployment Guide](deployment/DEPLOYMENT.md). -->
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-<!-- **Quick deployment on EC2:**
+3. Run the application:
+```bash
+python src/app.py
+```
+
+The application will be available at `http://localhost:8000`
+
+## Deployment
+
+For deployment instructions to AWS EC2 with Gunicorn, see [Deployment Guide](deployment/DEPLOYMENT.md).
+
+**Quick deployment on EC2:**
 ```bash
 # After connecting to EC2 and cloning the repo
-bash deployment/setup.sh      # Initial system setup (run once)
-bash deployment/deploy.sh     # Deploy application
-sudo bash deployment/create-service.sh  # Create systemd service
-sudo systemctl start flask-app  # Start the service
-``` -->
-
-<!-- ## Development -->
-
-<!-- For development workflows and guidelines, see [Developer Information](developers.md). -->
+bash deployment/deploy.sh
+```
 
 ### Environment Variables
 
