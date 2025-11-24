@@ -36,6 +36,6 @@ INSERT INTO study_guides (skill_test_id, content) VALUES
 ((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Copy a systemd .service file into the appropriate location.'),
 ((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Know how to launch and SSH into an AWS EC2 instance.'),
 ((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Answer questions about EC2, SSH, yum, firewalls, systemd, and curl.'),
-((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Launch a web server using systemd.');
+((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Launch a web server using systemd.'),
 ((SELECT id FROM skill_tests WHERE name = "Deploy on AWS"), 'Understand the purpose of gunicorn and flask.');
 

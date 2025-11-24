@@ -44,6 +44,9 @@ def init_database():
         )
 
         # Table for storing skill tests 
+        cursor.execute("PRAGMA foreign_keys = OFF")
+        cursor.execute("DROP TABLE IF EXISTS skill_tests;")
+        cursor.execute("PRAGMA foreign_keys = ON")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS skill_tests (
@@ -72,6 +75,9 @@ def init_database():
             """
         )
         # Table for storing question information
+        cursor.execute("PRAGMA foreign_keys = OFF")
+        cursor.execute("DROP TABLE IF EXISTS questions;")
+        cursor.execute("PRAGMA foreign_keys = ON")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS questions (
@@ -116,6 +122,9 @@ def init_database():
         )
 
         # Table for storing study guides
+        cursor.execute("PRAGMA foreign_keys = OFF")
+        cursor.execute("DROP TABLE IF EXISTS study_guides;")
+        cursor.execute("PRAGMA foreign_keys = ON")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS study_guides (
