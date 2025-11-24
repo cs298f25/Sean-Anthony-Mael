@@ -83,13 +83,18 @@ def init_database():
             CREATE TABLE IF NOT EXISTS questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 skill_test_id INTEGER NOT NULL,
+                question_type TEXT NOT NULL DEFAULT 'text_input' CHECK(question_type IN ('multiple_choice', 'text_input')),
                 prompt TEXT NOT NULL CHECK(prompt != ''),
                 answer TEXT NOT NULL CHECK(answer != ''),
                 category TEXT NOT NULL CHECK(category != ''),
+                choices TEXT,
                 FOREIGN KEY (skill_test_id) REFERENCES skill_tests(id)
             );
             """
         )
+        
+        # Add choices column to existing questions table if it doesn't exist (migration)
+        ensure_choices_column(cursor)
 
         # Table for storing the questions in a quiz result
         cursor.execute(
@@ -144,6 +149,7 @@ def init_database():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_user_id ON user_skill_stats(user_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_skill_stats_skill_test_id ON user_skill_stats(skill_test_id);")
         ensure_password_column(cursor)
+        ensure_choices_column(cursor)
         conn.commit()
         print(f"Database initialized at {DB_PATH}")
         
@@ -287,3 +293,12 @@ def ensure_password_column(cursor: sqlite3.Cursor):
     columns = [row["name"] for row in cursor.fetchall()]
     if "password_hash" not in columns:
         cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
+
+def ensure_choices_column(cursor: sqlite3.Cursor):
+    """Add choices column to questions table for multiple choice questions."""
+    cursor.execute("PRAGMA table_info(questions)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "choices" not in columns:
+        cursor.execute("ALTER TABLE questions ADD COLUMN choices TEXT")
+    # Also ensure question_type has a default for existing rows
+    cursor.execute("UPDATE questions SET question_type = 'text_input' WHERE question_type IS NULL OR question_type = ''")

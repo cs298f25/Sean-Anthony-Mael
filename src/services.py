@@ -1,3 +1,4 @@
+import json
 from database.db_services import (
     start_quiz_session, finish_quiz_session,
     get_skill_test_questions, record_user_answer, get_quiz_session,
@@ -10,13 +11,20 @@ def start_quiz_service(username: str, skill_test_id: int):
     """Start a new quiz session for a user. Returns session data with questions."""
     user = get_user(username) or get_user(create_user(username))
     questions = get_skill_test_questions(skill_test_id, limit=10)
+    # Parse choices JSON for multiple choice questions
+    for question in questions:
+        if question.get('question_type') == 'multiple_choice' and question.get('choices'):
+            try:
+                question['choices'] = json.loads(question['choices'])
+            except (json.JSONDecodeError, TypeError):
+                question['choices'] = []
     return {
         'session_id': start_quiz_session(user['id'], skill_test_id, len(questions)),
         'user_id': user['id'],
         'questions': questions
     }
 
-def submit_answer_service(session_id: int, question_id: int, user_answer: str, correct_answer: str):
+def submit_answer_service(session_id: int, question_id: int, user_answer: str, correct_answer: str, question_type: str = 'text_input'):
     """Submit an answer and record if it's correct."""
     is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
     record_user_answer(session_id, question_id, user_answer, is_correct)

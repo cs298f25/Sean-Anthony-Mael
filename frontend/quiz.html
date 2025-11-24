@@ -29,13 +29,30 @@
                     <input type="hidden" name="question_id" value="{{ current_question.id }}">
                     <input type="hidden" name="correct_answer" value="{{ current_question.answer }}">
 
-                    <label class="answer-label" for="answer-input">Your answer</label>
-                    <textarea 
-                        id="answer-input" 
-                        name="answer" 
-                        rows="4" 
-                        class="answer-input" 
-                        required>{{ current_answer }}</textarea>
+                    {% if current_question.question_type == 'multiple_choice' and current_question.choices %}
+                        <label class="answer-label">Select your answer</label>
+                        <div class="multiple-choice-options">
+                            {% for choice in current_question.choices %}
+                                <label class="choice-option">
+                                    <input 
+                                        type="radio" 
+                                        name="answer" 
+                                        value="{{ choice }}"
+                                        {% if current_answer == choice %}checked{% endif %}
+                                        required>
+                                    <span class="choice-text">{{ choice }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <label class="answer-label" for="answer-input">Your answer</label>
+                        <textarea 
+                            id="answer-input" 
+                            name="answer" 
+                            rows="4" 
+                            class="answer-input" 
+                            required>{{ current_answer }}</textarea>
+                    {% endif %}
                 </form>
 
                 <div class="quiz-actions">

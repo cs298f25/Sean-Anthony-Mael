@@ -3,23 +3,23 @@ INSERT INTO skill_tests (name, description) VALUES
 ("Python Virtual Environments and Maven", "Tackle mixed-environment workflows, from venv activation to Maven lifecycle knowledge."),
 ("Deploy on AWS", "Walk through high-level deployment considerations and the services needed to ship safely.");
 
-INSERT INTO questions (skill_test_id, prompt, answer, category) VALUES
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command lists files in a directory, including hidden ones?', 'ls -a', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command moves a file named notes.txt to /home/user/docs/ and renames it to archive.txt in the same step?', 'mv notes.txt /home/user/docs/archive.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command displays the directory you are currently in?', 'pwd', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command creates a new directory named "new_folder" in the current directory?', 'mkdir new_folder', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command changes the current working directory to /home/user/projects/', 'cd /home/user/projects/', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command opens the man page for chmod?', 'man chmod', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What key quits a man page?', 'q', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command displays the contents of a file named README.md?', 'cat README.md', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command creates a new file named "todo.txt" in the current directory?', 'touch todo.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command deletes a file named "junk.txt" in the current directory?', 'rm junk.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'You are in /var/log/nginx/. What command moves you up two directories to /var/?', 'cd ../../var', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command opens a file named notes.txt in the terminal text editor?', 'nano notes.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command searches for "hello" in every .txt file in the current directory?', 'grep "hello" *.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command lists all files, filters to only .txt files, and prints them one per line?', 'ls | grep ".txt"', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command opens book.txt in less so you can scroll up and down?', 'less book.txt', 'Terminal'),
-((SELECT id FROM skill_tests WHERE name = "Terminal"), 'What command counts the number of lines in data.csv?', 'wc -l data.csv', 'Terminal');
+INSERT INTO questions (skill_test_id, question_type, prompt, answer, category) VALUES
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command lists files in a directory, including hidden ones?', 'ls -a', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command moves a file named notes.txt to /home/user/docs/ and renames it to archive.txt in the same step?', 'mv notes.txt /home/user/docs/archive.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command displays the directory you are currently in?', 'pwd', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command creates a new directory named "new_folder" in the current directory?', 'mkdir new_folder', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command changes the current working directory to /home/user/projects/', 'cd /home/user/projects/', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command opens the man page for chmod?', 'man chmod', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What key quits a man page?', 'q', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command displays the contents of a file named README.md?', 'cat README.md', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command creates a new file named "todo.txt" in the current directory?', 'touch todo.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command deletes a file named "junk.txt" in the current directory?', 'rm junk.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'You are in /var/log/nginx/. What command moves you up two directories to /var/?', 'cd ../../var', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command opens a file named notes.txt in the terminal text editor?', 'nano notes.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command searches for "hello" in every .txt file in the current directory?', 'grep "hello" *.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command lists all files, filters to only .txt files, and prints them one per line?', 'ls | grep ".txt"', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command opens book.txt in less so you can scroll up and down?', 'less book.txt', 'Terminal'),
+((SELECT id FROM skill_tests WHERE name = "Terminal"), 'text_input', 'What command counts the number of lines in data.csv?', 'wc -l data.csv', 'Terminal');
 
 INSERT INTO study_guides (skill_test_id, content) VALUES
 ((SELECT id FROM skill_tests WHERE name = "Terminal"), 'Manipulate files and directories in the terminal using various commands.'),

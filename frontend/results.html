@@ -48,16 +48,31 @@
                                 </div>
                                 
                                 <div class="answer-comparison">
-                                    <div class="answer-item">
-                                        <strong>Your Answer:</strong>
-                                        <p class="user-answer">{{ answer.user_answer }}</p>
-                                    </div>
-                                    
-                                    {% if not answer.is_correct %}
+                                    {% if answer.question_type == 'multiple_choice' and answer.choices %}
                                         <div class="answer-item">
-                                            <strong>Correct Answer:</strong>
-                                            <p class="correct-answer">{{ answer.correct_answer }}</p>
+                                            <strong>Available Options:</strong>
+                                            <div class="choices-list">
+                                                {% for choice in answer.choices %}
+                                                    <span class="choice-item {% if choice == answer.correct_answer %}correct-choice{% endif %} {% if choice == answer.user_answer %}user-choice{% endif %}">
+                                                        {{ choice }}
+                                                        {% if choice == answer.correct_answer %} ✓{% endif %}
+                                                        {% if choice == answer.user_answer and not answer.is_correct %} (Your answer){% endif %}
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
                                         </div>
+                                    {% else %}
+                                        <div class="answer-item">
+                                            <strong>Your Answer:</strong>
+                                            <p class="user-answer">{{ answer.user_answer }}</p>
+                                        </div>
+                                        
+                                        {% if not answer.is_correct %}
+                                            <div class="answer-item">
+                                                <strong>Correct Answer:</strong>
+                                                <p class="correct-answer">{{ answer.correct_answer }}</p>
+                                            </div>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </div>

@@ -210,7 +210,9 @@ def get_all_answers_with_questions(quiz_result_id: int):
                 q.id as q_id,
                 q.prompt,
                 q.answer as correct_answer,
-                q.category
+                q.category,
+                q.question_type,
+                q.choices
             FROM quiz_result_questions qrq
             JOIN questions q ON qrq.question_id = q.id
             WHERE qrq.quiz_result_id = ?

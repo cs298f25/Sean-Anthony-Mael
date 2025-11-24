@@ -3,6 +3,7 @@ from flask import session as flask_session
 import os
 import sys
 import sqlite3
+import json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from database.database import init_database, create_user, get_user, login_user
 from services import (
@@ -155,6 +156,13 @@ def quiz_page(session_id):
     
     flask_session['current_question_index'] = current_index
     current_question = questions[current_index]
+    # Parse choices JSON if it's a multiple choice question
+    if current_question.get('question_type') == 'multiple_choice' and current_question.get('choices'):
+        if isinstance(current_question['choices'], str):
+            try:
+                current_question['choices'] = json.loads(current_question['choices'])
+            except (json.JSONDecodeError, TypeError):
+                current_question['choices'] = []
     quiz_data = get_quiz_data_service(session_id)
     answers = flask_session.get('answers', {})
     
@@ -197,9 +205,12 @@ def submit_answer():
         answers[str(question_id)] = user_answer
         flask_session['answers'] = answers
         
+        # Get question type for answer validation
+        question_type = questions[current_index].get('question_type', 'text_input')
+        
         # Save to database (continue on error)
         try:
-            submit_answer_service(session_id, question_id, user_answer, correct_answer)
+            submit_answer_service(session_id, question_id, user_answer, correct_answer, question_type)
         except Exception:
             pass
         
@@ -224,8 +235,12 @@ def finish_quiz(session_id):
             answers = flask_session.get('answers', {})
             answers[str(question_id_int)] = user_answer
             flask_session['answers'] = answers
+            # Get question type from current question
+            questions = flask_session.get('questions', [])
+            current_question = next((q for q in questions if q.get('id') == question_id_int), None)
+            question_type = current_question.get('question_type', 'text_input') if current_question else 'text_input'
             try:
-                submit_answer_service(session_id, question_id_int, user_answer, correct_answer)
+                submit_answer_service(session_id, question_id_int, user_answer, correct_answer, question_type)
             except Exception:
                 pass
         except ValueError:
@@ -265,11 +280,21 @@ def show_results(session_id):
     if not results:
         return redirect(url_for('index'))
     
+    all_answers = get_all_answers_with_questions_service(session_id)
+    # Parse choices JSON for multiple choice questions in results
+    for answer in all_answers:
+        if answer.get('question_type') == 'multiple_choice' and answer.get('choices'):
+            if isinstance(answer['choices'], str):
+                try:
+                    answer['choices'] = json.loads(answer['choices'])
+                except (json.JSONDecodeError, TypeError):
+                    answer['choices'] = []
+    
     return render_template('results.html', 
                         session_id=session_id,
                         results=results,
                         quiz_data=quiz_data,
-                        all_answers=get_all_answers_with_questions_service(session_id),
+                        all_answers=all_answers,
                         skill_test=_get_skill_test(quiz_data.get('skill_test_id')))
 
 @app.route('/history/<username>')
