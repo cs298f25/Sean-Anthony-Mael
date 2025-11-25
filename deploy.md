@@ -50,6 +50,27 @@ Simple guide to deploy the DevOps Skill Test Simulator to an Ubuntu AWS EC2 inst
 
 ## Step 1: Launch EC2 Instance
 
+### Option A: Automated Deployment with User Data (Recommended)
+
+1. Go to **AWS Console** → **EC2** → **Launch Instance**
+
+2. Configure:
+   - **AMI:** Ubuntu 22.04 LTS
+   - **Instance Type:** t2.micro or t3.micro
+   - **Key Pair:** Select or create a key pair (save the .pem file)
+   - **Security Group:** Add rule for **Custom TCP port 8000** from **0.0.0.0/0**
+   - **Storage:** Default 8GB
+
+3. **Scroll down to "Advanced details"** section
+4. In the **User data** field, paste the contents of `deployment/user-data.sh` (after updating the repo URL)
+5. Click **Launch Instance**
+6. Wait 2-5 minutes for automated deployment to complete
+7. Your app will be running automatically with systemd service!
+
+**See `deployment/USER_DATA_GUIDE.md` for detailed instructions.**
+
+### Option B: Manual Deployment
+
 1. Go to **AWS Console** → **EC2** → **Launch Instance**
 
 2. Configure:
@@ -81,28 +102,86 @@ cd Sean-Anthony-Mael
 bash deployment/deploy.sh
 ```
 
-
-
-
-
-
 This will:
+- Update system packages
+- Install Python, pip, and virtual environment tools
 - Create Python virtual environment
 - Install dependencies
 - Create `.env` file with Flask secret key
 - Test the application
+- Start Gunicorn (runs in foreground)
+
+**Note:** The app will stop when you close your SSH session. To keep it running in the background, see Step 4.
 
 
+**Useful systemd commands:**
+```bash
+# Start the service
+sudo systemctl start flask-app
+
+# Stop the service
+sudo systemctl stop flask-app
+
+# Restart the service
+sudo systemctl restart flask-app
+
+# Check status
+sudo systemctl status flask-app
+
+# View logs (live)
+sudo journalctl -u flask-app -f
+
+# View recent logs
+sudo journalctl -u flask-app -n 50
+
+# Disable auto-start on boot
+sudo systemctl disable flask-app
+
+# Enable auto-start on boot
+sudo systemctl enable flask-app
+```
 
 Your app is now running! Visit `http://YOUR_EC2_PUBLIC_IP:8000` in your browser.
 
+
+## Updating the Application
+
+If you're using systemd service:
+```bash
+cd ~/Sean-Anthony-Mael
+git pull
+bash deployment/deploy.sh
+sudo systemctl restart flask-app
+```
+
+If running manually:
+```bash
+cd ~/Sean-Anthony-Mael
+git pull
+bash deployment/deploy.sh
+# Stop old process and restart
+pkill -f gunicorn
+source .venv/bin/activate
+nohup env PYTHONPATH="$PWD:$PWD/src" gunicorn -w 4 -b 0.0.0.0:8000 'src.app:app' > app.log 2>&1 &
+```
 
 ## Troubleshooting
 
 **Can't connect?**
 - Check Security Group allows port 8000
-- Verify app is running: `ps aux | grep gunicorn`
+- Verify app is running: `ps aux | grep gunicorn` or `sudo systemctl status flask-app`
 
+**App won't start?**
+- Check logs: `sudo journalctl -u flask-app -n 50` (if using systemd) or `tail -f app.log` (if running manually)
+- Verify `.env` file exists: `cat .env`
+- Make sure virtual environment is activated
+- **ModuleNotFoundError?** Make sure PYTHONPATH is set. The systemd service sets this automatically, but if running manually, use: `PYTHONPATH="$PWD:$PWD/src" gunicorn ...`
+
+**Service won't start?**
+- Check service status: `sudo systemctl status flask-app`
+- Check logs: `sudo journalctl -u flask-app -n 50`
+- Verify the service file exists: `cat /etc/systemd/system/flask-app.service`
+- Make sure you ran `bash deployment/deploy.sh` first to set up the environment
 
 **Permission errors?**
 ```bash

@@ -1,0 +1,21 @@
+[Unit]
+Description=DevOps Quiz Flask Application
+After=network.target
+
+[Service]
+Type=notify
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/Sean-Anthony-Mael
+Environment="PATH=/home/ubuntu/Sean-Anthony-Mael/.venv/bin"
+Environment="PYTHONPATH=/home/ubuntu/Sean-Anthony-Mael:/home/ubuntu/Sean-Anthony-Mael/src"
+Environment="FLASK_KEY=your-flask-secret-key-here"
+ExecStart=/home/ubuntu/Sean-Anthony-Mael/.venv/bin/gunicorn -w 4 -b 0.0.0.0:8000 'src.app:app'
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=flask-app
+
+[Install]
+WantedBy=multi-user.target
