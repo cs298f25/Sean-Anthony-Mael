@@ -32,14 +32,17 @@
                     {% if current_question.question_type == 'multiple_choice' and current_question.choices %}
                         <label class="answer-label">Select your answer</label>
                         <div class="multiple-choice-options">
+                            {% set letters = ['a', 'b', 'c', 'd', 'e', 'f'] %}
                             {% for choice in current_question.choices %}
+                                {% set letter = letters[loop.index0] %}
                                 <label class="choice-option">
                                     <input 
                                         type="radio" 
                                         name="answer" 
-                                        value="{{ choice }}"
-                                        {% if current_answer == choice %}checked{% endif %}
+                                        value="{{ letter }}"
+                                        {% if current_answer == letter %}checked{% endif %}
                                         required>
+                                    <span class="choice-letter">{{ letter.upper() }}.</span>
                                     <span class="choice-text">{{ choice }}</span>
                                 </label>
                             {% endfor %}

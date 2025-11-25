@@ -50,13 +50,22 @@
                                 <div class="answer-comparison">
                                     {% if answer.question_type == 'multiple_choice' and answer.choices %}
                                         <div class="answer-item">
+                                            <strong>Your Answer:</strong>
+                                            <p class="user-answer">{{ answer.user_answer.upper() }}</p>
+                                        </div>
+                                        <div class="answer-item">
+                                            <strong>Correct Answer:</strong>
+                                            <p class="correct-answer">{{ answer.correct_answer.upper() }}</p>
+                                        </div>
+                                        <div class="answer-item">
                                             <strong>Available Options:</strong>
                                             <div class="choices-list">
+                                                {% set letters = ['a', 'b', 'c', 'd', 'e', 'f'] %}
                                                 {% for choice in answer.choices %}
-                                                    <span class="choice-item {% if choice == answer.correct_answer %}correct-choice{% endif %} {% if choice == answer.user_answer %}user-choice{% endif %}">
-                                                        {{ choice }}
-                                                        {% if choice == answer.correct_answer %} ✓{% endif %}
-                                                        {% if choice == answer.user_answer and not answer.is_correct %} (Your answer){% endif %}
+                                                    {% set letter = letters[loop.index0] %}
+                                                    <span class="choice-item {% if letter == answer.correct_answer %}correct-choice{% endif %} {% if letter == answer.user_answer and not answer.is_correct %}user-choice{% endif %}">
+                                                        <strong>{{ letter.upper() }}.</strong> {{ choice }}
+                                                        {% if letter == answer.correct_answer %} ✓{% endif %}
                                                     </span>
                                                 {% endfor %}
                                             </div>

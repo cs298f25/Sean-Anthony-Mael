@@ -468,6 +468,13 @@ footer {
     font-weight: 500;
 }
 
+.choice-letter {
+    font-weight: 600;
+    color: var(--accent);
+    margin-right: 0.5rem;
+    min-width: 1.5rem;
+}
+
 .choice-text {
     flex: 1;
     font-size: 1rem;
