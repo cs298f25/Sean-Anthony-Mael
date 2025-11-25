@@ -29,7 +29,17 @@ INSERT INTO questions (skill_test_id, question_type, prompt, answer, category, c
 (2, 'multiple_choice', 'What is the role of third-party libraries in virtual environments?', 'c', 'Python Virtual Environments and Maven', '["They are stored in the OS kernel", "They replace built-in Python modules", "They provide reusable external functionality", "They are not used in virtual environments"]'),
 (2, 'text_input', 'What command packages a Maven project into a JAR file?', 'mvn package', 'Python Virtual Environments and Maven', NULL),
 (2, 'multiple_choice', 'How does the activate and deactivate scripts modify the $PATH?', 'a', 'Python Virtual Environments and Maven', '["They add the virtual environment''s bin directory to the $PATH", "They remove the virtual environment''s bin directory from the $PATH", "They add the virtual environment''s bin directory to the $PATH and remove the system''s bin directory from the $PATH", "They remove the virtual environment''s bin directory from the $PATH and add the system''s bin directory to the $PATH"]'),
-(2, 'multiple_choice', 'What happens if you run a project without activating it''s virtual environment?', 'b', 'Python Virtual Environments and Maven', '["The project will run successfully", "The project will fail to run", "The project will run with limited functionality", "The project will run with full functionality"]');
+(2, 'multiple_choice', 'What happens if you run a project without activating it''s virtual environment?', 'b', 'Python Virtual Environments and Maven', '["The project will run successfully", "The project will fail to run", "The project will run with limited functionality", "The project will run with full functionality"]'),
+(3, 'multiple_choice', "What is an EC2 instance?", 'a', 'Deploy on AWS', '["A virtual server in the cloud", "A file storage system", "A container orchestration tool", "A managed database service"]'),
+(3, 'text_input', 'Which port must be open for HTTP web traffic?', '80', 'Deploy on AWS', NULL),
+(3, 'multiple_choice', 'Which protocol is used to securely connect to an EC2 instance from your local machine?', 'b', 'Deploy on AWS', '["HTTP", "SSH", "TCP", "HTTPS"]'),
+(3, 'multiple_choice', 'What is the purpose of a firewall?', 'c', 'Deploy on AWS', '["To increase internet speed", "To manage file storage", "To block unauthorized access to a network", "To clean up viruses from a system"]'),
+(3, 'text_input', 'Write the command to enable a systemd service file called flask-app so it starts on boot.', 'systemctl enable flask-app', 'Deploy on AWS', NULL),
+(3, 'text_input', 'Write the curl command to send a request to a web server running on localhost 5000.', 'curl http://localhost:5000', 'Deploy on AWS', NULL),
+(3, 'text_input', 'Write the command to clone a GitHub repository? Example URL: https://github.com/user/webapp.git', 'git clone https://github.com/user/webapp.git', 'Deploy on AWS', NULL),
+(3, 'multiple_choice', 'What is the package manager primarily used in Amazon Linux?', 'a', 'Deploy on AWS', '["yum", "apt", "brew", "pacman"]'),
+(3, 'multiple_choice', 'Which AWS component controls the inbound and outbound traffic for EC2 instances?', 'a', 'Deploy on AWS', '["Security Group", "VPC", "Subnet", "S3 Bucket"]'),
+(3, 'multiple_choice', 'What is the primary purpose of gunicorn?', 'b', 'Deploy on AWS', '["To serve static files to the user", "To manage multiple worker processes and handle incoming HTTP requests", "To compile Python code to bytecode", "To run a Python application"]');
 
 INSERT INTO study_guides (skill_test_id, content) VALUES
 (1, 'Manipulate files and directories in the terminal using various commands.'),
