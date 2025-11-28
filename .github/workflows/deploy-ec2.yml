@@ -25,12 +25,19 @@ jobs:
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
           cd ~/Sean-Anthony-Mael
           git pull origin main
-          bash deployment/deploy.sh
-          if sudo systemctl list-unit-files | grep -q skill-test.service; then
+          sudo systemctl stop skill-tests.service || true
+          pkill -9 -f gunicorn || true
+          sleep 2
+          source .venv/bin/activate || python3 -m venv .venv && source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          PYTHONPATH="$PWD:$PWD/src" python3 -c "from src.app import app; print('✅ App imports OK')"
+          # Restart service
+          if sudo systemctl list-unit-files | grep -q skill-tests.service; then
             sudo systemctl daemon-reload
-            sudo systemctl enable skill-test.service || true
-            sudo systemctl restart skill-test.service
-            sudo systemctl status skill-test.service --no-pager || true
+            sudo systemctl enable skill-tests.service || true
+            sudo systemctl restart skill-tests.service
+            sudo systemctl status skill-tests.service --no-pager || true
           else
             echo "Service not found - app may need manual start"
           fi
@@ -40,7 +47,7 @@ jobs:
       run: |
         sleep 10
         SERVICE_STATUS=$(ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} \
-          "sudo systemctl is-active skill-test.service 2>&1 || echo 'inactive'")
+          "sudo systemctl is-active skill-tests.service 2>&1 || echo 'inactive'")
         echo "Service status: $SERVICE_STATUS"
         if curl -f -s http://${{ secrets.EC2_HOST }}:8000/ > /dev/null; then
           echo "✅ App is responding"
@@ -48,7 +55,7 @@ jobs:
         else
           echo "❌ App not responding"
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} \
-            "sudo systemctl status skill-test.service --no-pager || echo 'Service check failed'"
+            "sudo systemctl status skill-tests.service --no-pager || echo 'Service check failed'"
           exit 1
         fi
 
