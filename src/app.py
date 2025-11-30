@@ -1,5 +1,4 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for
-from flask import session as flask_session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session as flask_session
 import os
 import sys
 import sqlite3
@@ -135,7 +134,6 @@ def _get_skill_test(skill_test_id):
 @app.route('/quiz/<int:session_id>')
 def quiz_page(session_id):
     """Display quiz questions page."""
-    # Verify session_id matches stored session
     if flask_session.get('quiz_session_id') != session_id:
         return redirect(url_for('index'))
     
