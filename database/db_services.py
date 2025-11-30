@@ -96,22 +96,6 @@ def update_question_stats(question_id: int, correct_answers: int, incorrect_answ
     finally:
         conn.close()
 
-def update_user_skill_stats(user_id: int, skill_test_id: int, correct_answers: int, incorrect_answers: int):
-    """Update the user skill stats for a skill test."""
-    if not user_id or not skill_test_id:
-        raise ValueError("User ID and skill test ID are required")
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE user_skill_stats SET correct_answers = ?, incorrect_answers = ? WHERE user_id = ? AND skill_test_id = ?",
-            (correct_answers, incorrect_answers, user_id, skill_test_id)
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
 def get_quiz_session(session_id: int):
     """Get a quiz session by session ID."""
     if not session_id:
@@ -123,45 +107,6 @@ def get_quiz_session(session_id: int):
         cursor.execute("SELECT * FROM quiz_results WHERE id = ?", (session_id,))
         row = cursor.fetchone()
         return dict(row) if row else None
-    finally:
-        conn.close()
-
-def get_user_history(user_id: int):
-    """Get the history of quiz sessions for a user."""
-    if not user_id:
-        raise ValueError("User ID is required")
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM quiz_results WHERE user_id = ?", (user_id,))
-        return [dict(row) for row in cursor.fetchall()]
-    finally:
-        conn.close()
-
-def get_skill_test_leaderboard(skill_test_id: int):
-    """Get the leaderboard for a skill test."""
-    if not skill_test_id:
-        raise ValueError("Skill test ID is required")
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM quiz_results WHERE skill_test_id = ? ORDER BY score DESC", (skill_test_id,))
-        return [dict(row) for row in cursor.fetchall()]
-    finally:
-        conn.close()
-
-def get_user_performance(user_id: int):
-    """Get the performance of a user across all skill tests."""
-    if not user_id:
-        raise ValueError("User ID is required")
-    
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM user_skill_stats WHERE user_id = ?", (user_id,))
-        return [dict(row) for row in cursor.fetchall()]
     finally:
         conn.close()
 

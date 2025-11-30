@@ -92,9 +92,6 @@ def init_database():
             );
             """
         )
-        
-        # Add choices column to existing questions table if it doesn't exist (migration)
-        ensure_choices_column(cursor)
 
         # Table for storing the questions in a quiz result
         cursor.execute(

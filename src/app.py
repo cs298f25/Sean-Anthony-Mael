@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from database.database import init_database, create_user, get_user, login_user
 from services import (
     start_quiz_service, submit_answer_service, finish_quiz_service,
-    get_quiz_data_service, get_user_quiz_history_service,
+    get_quiz_data_service,
     get_all_answers_with_questions_service,
     get_study_guide_service, get_leaderboard_service 
 )
@@ -57,7 +57,6 @@ def api_register():
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
 
-    flask_session['user_id'] = user_id
     flask_session['username'] = username
 
     return jsonify({
@@ -87,7 +86,6 @@ def api_login():
     if user is None:
         return jsonify({'error': 'Invalid credentials.'}), 401
 
-    flask_session['user_id'] = user['id']
     flask_session['username'] = user['username']
 
     return jsonify({
@@ -102,7 +100,6 @@ def api_login():
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
     """Clear the user session."""
-    flask_session.pop('user_id', None)
     flask_session.pop('username', None)
     return jsonify({'status': 'logged_out'})
 
@@ -276,10 +273,6 @@ def show_results(session_id):
     if not quiz_data:
         return redirect(url_for('index'))
     
-    results = finish_quiz_service(session_id)
-    if not results:
-        return redirect(url_for('index'))
-    
     all_answers = get_all_answers_with_questions_service(session_id)
     # Parse choices JSON for multiple choice questions in results
     for answer in all_answers:
@@ -290,20 +283,24 @@ def show_results(session_id):
                 except (json.JSONDecodeError, TypeError):
                     answer['choices'] = []
     
+    # Build results from quiz_data and all_answers (quiz already finished in finish_quiz)
+    correct_count = sum(1 for answer in all_answers if answer.get('is_correct'))
+    total_questions = quiz_data.get('total_questions', len(all_answers))
+    score = quiz_data.get('score', (correct_count / total_questions * 100) if total_questions > 0 else 0)
+    results = {
+        'session_id': session_id,
+        'score': score,
+        'total_questions': total_questions,
+        'correct_count': correct_count,
+        'incorrect_count': total_questions - correct_count
+    }
+    
     return render_template('results.html', 
                         session_id=session_id,
                         results=results,
                         quiz_data=quiz_data,
                         all_answers=all_answers,
                         skill_test=_get_skill_test(quiz_data.get('skill_test_id')))
-
-@app.route('/history/<username>')
-def user_history(username):
-    """Show user's quiz history."""
-    history = get_user_quiz_history_service(username)
-    return render_template('history.html', 
-                        username=username, 
-                        history=history)
 
 @app.route('/preview/<int:skill_test_id>')
 def preview_skill_test(skill_test_id):

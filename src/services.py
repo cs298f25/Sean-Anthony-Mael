@@ -2,7 +2,7 @@ import json
 from database.db_services import (
     start_quiz_session, finish_quiz_session,
     get_skill_test_questions, record_user_answer, get_quiz_session,
-    update_question_stats, get_user_history, get_correct_answers, get_incorrect_answers,
+    update_question_stats, get_correct_answers, get_incorrect_answers,
     get_all_answers_with_questions, get_study_guide_by_skill_test, get_leaderboard_by_skill_test
 )
 from database.database import create_user, get_user
@@ -20,7 +20,6 @@ def start_quiz_service(username: str, skill_test_id: int):
                 question['choices'] = []
     return {
         'session_id': start_quiz_session(user['id'], skill_test_id, len(questions)),
-        'user_id': user['id'],
         'questions': questions
     }
 
@@ -60,11 +59,6 @@ def finish_quiz_service(session_id: int):
 def get_quiz_data_service(session_id: int):
     """Get quiz session data for display."""
     return get_quiz_session(session_id)
-
-def get_user_quiz_history_service(username: str):
-    """Get a user's quiz history."""
-    user = get_user(username)
-    return get_user_history(user['id']) if user else []
 
 def get_study_guide_service(skill_test_id: int):
     """Get study guide content for a skill test."""
