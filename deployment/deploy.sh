@@ -81,6 +81,17 @@ else
     echo "⚠️  Warning: iptables not found, skipping port forwarding setup"
 fi
 
+# Check if we should skip starting Gunicorn (for systemd setup)
+# Set SKIP_GUNICORN=1 to skip starting Gunicorn
+if [ "${SKIP_GUNICORN:-0}" = "1" ] || [ "${1:-}" = "--no-start" ]; then
+    echo "✅ Deployment setup complete"
+    echo ""
+    echo "To set up systemd service, run:"
+    echo "  sudo bash deployment/setup-systemd.sh"
+    echo ""
+    exit 0
+fi
+
 echo "🚀 Starting Gunicorn..."
 
 # Check if virtual environment exists
@@ -100,6 +111,10 @@ export PYTHONPATH="$PROJECT_DIR:$PROJECT_DIR/src"
 
 echo "📁 Project directory: $PROJECT_DIR"
 echo "🐍 Python path: $PYTHONPATH"
+echo ""
+echo "ℹ️  Note: Gunicorn is running in foreground mode."
+echo "   To run as a systemd service instead, run:"
+echo "   sudo bash deployment/setup-systemd.sh"
 echo ""
 
 # Run Gunicorn (foreground by default)

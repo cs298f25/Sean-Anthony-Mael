@@ -95,6 +95,29 @@ systemctl start flask-app
 sleep 5
 systemctl status flask-app --no-pager || true
 
+# Set up port forwarding from 80 to 8000
+echo "🔧 Setting up port forwarding (80 -> 8000)..."
+apt-get install -y iptables-persistent
+
+# Add port forwarding rules if they don't exist
+if ! iptables -t nat -C PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000 2>/dev/null; then
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000
+fi
+
+if ! iptables -t nat -C OUTPUT -p tcp --dport 80 -j REDIRECT --to-port 8000 2>/dev/null; then
+    iptables -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-port 8000
+fi
+
+# Save iptables rules
+if command -v netfilter-persistent &> /dev/null; then
+    netfilter-persistent save
+else
+    mkdir -p /etc/iptables 2>/dev/null; then
+    iptables-save > /etc/iptables/rules.v4
+fi
+
+echo "✅ Port forwarding configured"
+
 echo "=========================================="
 echo "Deployment complete!"
 echo "Service status:"
@@ -102,5 +125,7 @@ systemctl is-active flask-app || echo "Service may still be starting..."
 echo "=========================================="
 echo "View logs with: sudo journalctl -u flask-app -f"
 echo "Check status with: sudo systemctl status flask-app"
+echo "=========================================="
+echo "App accessible at: http://crevelingsweb.moraviancs.click (no port needed)"
 echo "=========================================="
 
