@@ -24,15 +24,6 @@ init_database()
 # Set secret key for sessions (fallback to a dev default for local use)
 app.secret_key = os.getenv('FLASK_KEY') or 'dev-secret-key' 
 
-@app.after_request
-def add_cors_headers(response):
-    """Allow cross-origin requests for local development (e.g., when UI runs on a different port)."""
-    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    return response
-
 @app.route('/', methods=['GET'])
 def index():
     """Root endpoint - serves index.html with skill tests from database."""
