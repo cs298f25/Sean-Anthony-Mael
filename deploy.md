@@ -67,8 +67,6 @@ Simple guide to deploy the DevOps Skill Test Simulator to an Ubuntu AWS EC2 inst
 6. Wait 2-5 minutes for automated deployment to complete
 7. Your app will be running automatically with systemd service!
 
-**See `deployment/USER_DATA_GUIDE.md` for detailed instructions.**
-
 ### Option B: Manual Deployment
 
 1. Go to **AWS Console** → **EC2** → **Launch Instance**
@@ -141,7 +139,7 @@ sudo systemctl disable flask-app
 sudo systemctl enable flask-app
 ```
 
-Your app is now running! Visit `http://YOUR_EC2_PUBLIC_IP:8000` in your browser.
+Your app is now running! Visit `http://YOUR_EC2_PUBLIC_IP` in your browser.
 
 
 ## Updating the Application
