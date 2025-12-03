@@ -1,4 +1,5 @@
 import json
+import re
 from database.db_services import (
     start_quiz_session, finish_quiz_session,
     get_skill_test_questions, record_user_answer, get_quiz_session,
@@ -25,7 +26,9 @@ def start_quiz_service(username: str, skill_test_id: int):
 
 def submit_answer_service(session_id: int, question_id: int, user_answer: str, correct_answer: str, question_type: str = 'text_input'):
     """Submit an answer and record if it's correct."""
-    is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+    user_normalized = re.sub(r'\s+', ' ', user_answer.strip().lower())
+    correct_normalized = re.sub(r'\s+', ' ', correct_answer.strip().lower())
+    is_correct = user_normalized.strip().lower() == correct_normalized.strip().lower()
     record_user_answer(session_id, question_id, user_answer, is_correct)
     update_question_stats(question_id, int(is_correct), int(not is_correct))
     return is_correct
