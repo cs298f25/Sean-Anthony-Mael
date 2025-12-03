@@ -28,7 +28,7 @@ INSERT INTO questions (skill_test_id, question_type, prompt, answer, category, c
 (3, 'text_input', 'Which port must be open for HTTP web traffic?', '80', 'Deploy on AWS', NULL),
 (3, 'multiple_choice', 'Which protocol is used to securely connect to an EC2 instance from your local machine?', 'b', 'Deploy on AWS', '["HTTP", "SSH", "TCP", "HTTPS"]'),
 (3, 'multiple_choice', 'What is the purpose of a firewall?', 'c', 'Deploy on AWS', '["To increase internet speed", "To manage file storage", "To block unauthorized access to a network", "To clean up viruses from a system"]'),
-(3, 'text_input', 'Write the command to enable a systemd service file called flask-app so it starts on boot.', 'systemctl enable flask-app', 'Deploy on AWS', NULL),
+(3, 'text_input', 'Write the command to enable a systemd service file called flask-app so it starts on boot.', 'sudo systemctl enable flask-app', 'Deploy on AWS', NULL),
 (3, 'text_input', 'Write the curl command to send a request to a web server running on localhost 5000.', 'curl http://localhost:5000', 'Deploy on AWS', NULL),
 (3, 'text_input', 'Write the command to clone a GitHub repository? Example URL: https://github.com/user/webapp.git', 'git clone https://github.com/user/webapp.git', 'Deploy on AWS', NULL),
 (3, 'multiple_choice', 'What is the package manager primarily used in Amazon Linux?', 'a', 'Deploy on AWS', '["yum", "apt", "brew", "pacman"]'),
